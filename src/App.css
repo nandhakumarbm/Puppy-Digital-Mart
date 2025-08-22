@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400&display=swap');
+
+:root {
+  --background: #F9FAFB;
+  --primary-text: #1F2937;
+  --secondary-text: #6B7280;
+  --accent-primary: #7C3AED;
+  --accent-hover: #6D28D9;
+  --accent-secondary: #6366F1;
+  --success-currency: #FBBF24;
+  --card-background: #FFFFFF;
+  --card-border: #E5E7EB;
+  --button-text: #FFFFFF;
+  --input-border: #C7D2FE;
+  --font-family: "Poppins";
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  user-select: none;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--primary-text);
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
