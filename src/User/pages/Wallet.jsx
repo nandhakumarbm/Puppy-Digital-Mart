@@ -1,10 +1,16 @@
 import React, { useState } from "react";
 import { Lock, Check, Gift } from "lucide-react";
+import { useSelector } from "react-redux";
+
 
 const WalletPage = () => {
+    const userAuth = useSelector((state) => state.auth.wallet);
+    const { walletBalance } = userAuth || {};
+
     const [user] = useState({
-        balance: 1250,
+        balance: walletBalance,
     });
+
 
     const rewards = [
         {
@@ -35,7 +41,7 @@ const WalletPage = () => {
             type: "cashback"
         },
         {
-            id: 4,  
+            id: 4,
             title: "Paste",
             subtitle: "Surprise gift awaits!",
             requiredOrbits: 1500,

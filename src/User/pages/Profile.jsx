@@ -10,8 +10,9 @@ import { useSelector } from "react-redux";
 export default function ProfileCard() {
     const userAuth = useSelector((state) => state.auth);
 
-    console.log(userAuth);
-     return (
+    const { username, phone } = userAuth || {};
+
+    return (
         <Box
             sx={{
                 display: "flex",
@@ -56,14 +57,14 @@ export default function ProfileCard() {
                     mt={2}
                     sx={{ color: "#ffff", fontFamily: "Poppins" }}
                 >
-                    Nandhakumar
+                    {username}
                 </Typography>
 
                 <CardContent sx={{ mt: 2 }}>
                     <Stack spacing={1}>
                         <Stack direction="row" alignItems="center" spacing={1}>
                             <PhoneIcon style={{ color: "#ffff" }} fontSize="small" color="action" />
-                            <Typography style={{ fontFamily: "Poppins" }} variant="body2">+91 98765 43210</Typography>
+                            <Typography style={{ fontFamily: "Poppins" }} variant="body2">+91 {phone}</Typography>
                         </Stack>
                     </Stack>
                 </CardContent>
