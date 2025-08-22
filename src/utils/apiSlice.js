@@ -5,10 +5,10 @@ export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
     baseUrl: "https://api.puppydigitalmart.com/",
-    prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth?.token;
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("PuppyToken");
       if (token) {
-        headers.set("authorization", `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
       }
       return headers;
     },
@@ -17,7 +17,7 @@ export const apiSlice = createApi({
     // ===== AUTH =====
     registerUser: builder.mutation({
       query: (data) => ({
-        url: "/auth/register",  
+        url: "/auth/register",
         method: "POST",
         body: data,
       }),

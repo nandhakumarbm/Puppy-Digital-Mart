@@ -10,10 +10,11 @@ export function getToken() {
   return localStorage.getItem(TOKEN_KEY) || null;
 }
 
-export function getUser() {
+export function getUser() { 
   try {
     const token = getToken();
     if (!token) return null;
+
     return jwtDecode(token); // decode on the fly instead of storing
   } catch {
     return null;

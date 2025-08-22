@@ -5,9 +5,13 @@ import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 import PhoneIcon from "@mui/icons-material/Phone";
+import { useSelector } from "react-redux";
 
 export default function ProfileCard() {
-    return (
+    const userAuth = useSelector((state) => state.auth);
+
+    console.log(userAuth);
+     return (
         <Box
             sx={{
                 display: "flex",

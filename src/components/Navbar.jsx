@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import Logo from "../assets/PuppyLogo.jpg";
 import SideMenu from "./SideMenu";
+import { useSelector } from "react-redux";
 
-function Navbar({ balance }) {
+function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const walletBalance = useSelector((state) => state.auth?.walletBalance || 0);
 
     const headerStyle = {
         display: "flex",
@@ -79,7 +81,7 @@ function Navbar({ balance }) {
 
                 <div style={headerStyle}>
                     <div style={orbBadge}>
-                        ORB {"1250"}
+                        ORB {walletBalance}
                     </div>
                 </div>
             </div>

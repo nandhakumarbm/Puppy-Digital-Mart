@@ -5,7 +5,6 @@ import { getIsLoggedIn, getUser } from "./utils/auth";
 import "./App.css";
 
 function App() {
-  const balance = "ORB 60";
   const isLoggedIn = getIsLoggedIn();
   const user = getUser();
   const location = useLocation();
@@ -15,7 +14,7 @@ function App() {
 
   return (
     <>
-      {showNavbar && <Navbar balance={balance} />}
+      {showNavbar && <Navbar />}
       <Routes>
         {publicRoutes.map(({ path, element }, index) => (
           <Route
