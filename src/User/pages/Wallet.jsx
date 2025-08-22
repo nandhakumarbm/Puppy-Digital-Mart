@@ -35,7 +35,7 @@ const WalletPage = () => {
             type: "cashback"
         },
         {
-            id: 4,
+            id: 4,  
             title: "Paste",
             subtitle: "Surprise gift awaits!",
             requiredOrbits: 1500,

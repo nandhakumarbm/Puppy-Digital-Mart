@@ -1,16 +1,9 @@
-
+import { jwtDecode } from "jwt-decode";
 
 const TOKEN_KEY = "PuppyToken";
-const USER_KEY = "PuppyUser";
 
 export function setToken(token) {
   localStorage.setItem(TOKEN_KEY, token);
-  try {
-    const decoded = jwtDecode(token);
-    localStorage.setItem(USER_KEY, JSON.stringify(decoded));
-  } catch {
-    localStorage.removeItem(USER_KEY);
-  }
 }
 
 export function getToken() {
@@ -19,8 +12,9 @@ export function getToken() {
 
 export function getUser() {
   try {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const token = getToken();
+    if (!token) return null;
+    return jwtDecode(token); // decode on the fly instead of storing
   } catch {
     return null;
   }
@@ -33,7 +27,6 @@ export function getIsLoggedIn() {
   try {
     const decoded = jwtDecode(token);
     if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-      // expired
       clearAuth();
       return false;
     }
@@ -46,6 +39,5 @@ export function getIsLoggedIn() {
 
 export function clearAuth() {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
   window.location.reload();
 }

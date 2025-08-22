@@ -3,16 +3,18 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 import { useState } from "react";
-import { saveUser, setIsLoggedIn } from "../../utils/auth";
+import { useRegisterUserMutation } from "../../utils/apiSlice";
 
 function Signup() {
     const nav = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
 
+    const [registerUser, { isLoading }] = useRegisterUserMutation();
+
     const validationSchema = Yup.object().shape({
-        mobileNumber: Yup.string()
+        phone: Yup.string()
             .matches(/^[0-9]+$/, "Only numbers are allowed")
-            .min(10, "Mobile number must be 10  digits")
+            .min(10, "Mobile number must be 10 digits")
             .max(10, "Mobile number must be 10 digits")
             .required("Mobile number is required"),
         name: Yup.string().required("Name is required"),
@@ -25,15 +27,19 @@ function Signup() {
         resolver: yupResolver(validationSchema),
     });
 
-    const onSubmit = (data) => {
-        saveUser({
-            mobileNumber: data.mobileNumber,
-            name: data.name,
-            password: data.password,
-        });
-        setIsLoggedIn(true);
-        nav("/", { replace: true });
-        window.location.reload(); // Reload to apply changes
+    const onSubmit = async (data) => {
+        try {
+            const res = await registerUser(data);
+            console.log(res.data);
+
+            if (res?.data?.message && res?.data?.userId) {
+                nav("/", { replace: true });
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error("Registration failed:", err);
+            alert(err?.data?.message || "Registration failed, please try again");
+        }
     };
 
     const containerStyle = {
@@ -106,15 +112,21 @@ function Signup() {
                         <input
                             type="text"
                             placeholder="Mobile Number"
-                            {...register("mobileNumber")}
+                            {...register("phone")}
                             style={{ ...inputStyle, borderRadius: "0 8px 8px 0" }}
                             onInput={(e) => (e.target.value = e.target.value.replace(/\D/g, ""))}
                         />
                     </div>
-                    {errors.mobileNumber && <p style={errorStyle}>{errors.mobileNumber.message}</p>}
+                    {errors.phone && <p style={errorStyle}>{errors.phone.message}</p>}
 
                     <div style={inputContainerStyle}>
-                        <input type="text" placeholder="Name" {...register("name")} autoComplete="off" style={inputStyle} />
+                        <input
+                            type="text"
+                            placeholder="Name"
+                            {...register("name")}
+                            autoComplete="off"
+                            style={inputStyle}
+                        />
                     </div>
                     {errors.name && <p style={errorStyle}>{errors.name.message}</p>}
 
@@ -150,7 +162,9 @@ function Signup() {
                     </div>
                     {errors.password && <p style={errorStyle}>{errors.password.message}</p>}
 
-                    <button type="submit" style={buttonStyle}>Sign Up</button>
+                    <button type="submit" style={buttonStyle} disabled={isLoading}>
+                        {isLoading ? "Signing Up..." : "Sign Up"}
+                    </button>
                 </form>
                 <p style={{ textAlign: "center", marginTop: "15px", fontSize: "14px" }}>
                     Already have an account? <Link to="/" style={linkStyle}>Login</Link>

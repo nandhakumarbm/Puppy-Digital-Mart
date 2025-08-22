@@ -4,7 +4,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 import { useState } from "react";
 import { useLoginUserMutation } from "../../utils/apiSlice";
-import setToken from "../../utils/auth";
+import { setToken } from "../../utils/auth";
 
 function Login() {
   const nav = useNavigate();
@@ -34,7 +34,7 @@ function Login() {
         phone: data.mobileNumber,
         password: data.password,
       });
-      setToken(res.token);
+      setToken(res.data.token);
       window.location.reload();
       nav("/", { replace: true });
     } catch (err) {
