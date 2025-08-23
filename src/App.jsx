@@ -15,24 +15,28 @@ function App() {
   const dispatch = useDispatch();
 
   const privatePaths = privateRoutes.map(r => r.path);
-  const showNavbar = isLoggedIn && privatePaths.includes(location.pathname);
+  const adminPaths = adminRoutes.map(r => r.path);
 
-  const { data: profile, error, isLoading } = useGetAuthProfileQuery();
+  // Show navbar for both private (user) and admin routes when logged in
+  const showNavbar = isLoggedIn && (
+    privatePaths.includes(location.pathname) ||
+    adminPaths.includes(location.pathname)
+  );
+
+  const { data: profile, error } = useGetAuthProfileQuery();
 
   useEffect(() => {
-    if (profile) {
-      dispatch(setAuth(profile));
-    }
-    if (error) {
-      console.error("Failed to fetch profile:", error);
-    }
-  }, [profile, error]);
+    if (profile) dispatch(setAuth(profile));
+    if (error) console.error("Failed to fetch profile:", error);
+  }, [profile, error, dispatch]);
 
+  if (!user) return <h3>Loading...</h3>
 
   return (
     <>
       {showNavbar && <Navbar />}
       <Routes>
+        {/* Public Routes */}
         {publicRoutes.map(({ path, element }, index) => (
           <Route
             key={`public-${index}`}
@@ -41,23 +45,18 @@ function App() {
           />
         ))}
 
-        {privateRoutes.map(({ path, element }, index) => (
-          <Route
-            key={`private-${index}`}
-            path={path}
-            element={isLoggedIn && user ? element : <Navigate to="/login" replace />}
-          />
+        {/* User Routes */}
+        {isLoggedIn && user?.role === "user" && privateRoutes.map(({ path, element }, index) => (
+          <Route key={`private-${index}`} path={path} element={element} />
         ))}
 
-        {adminRoutes.map(({ path, element }, index) => (
-          <Route
-            key={`admin-${index}`}
-            path={path}
-            element={isLoggedIn && user?.role === "admin" ? element : <Navigate to="/login" replace />}
-          />
+        {/* Admin Routes */}
+        {isLoggedIn && user?.role === "admin" && adminRoutes.map(({ path, element }, index) => (
+          <Route key={`admin-${index}`} path={path} element={element} />
         ))}
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to={isLoggedIn ? "/" : "/login"} replace />} />
       </Routes>
     </>
   );

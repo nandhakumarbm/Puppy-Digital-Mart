@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Clock, CheckCircle, User, Gift, Calendar } from 'lucide-react';
+import { useGetAdminRedemptionsQuery } from '../../utils/apiSlice';
 
 const RedemptionReq = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -7,69 +8,28 @@ const RedemptionReq = () => {
     const [sortBy, setSortBy] = useState("requestDate");
     const [sortOrder, setSortOrder] = useState("desc");
 
-    // Sample redemption requests data
-    const redemptionRequests = [
-        {
-            id: 1,
-            userId: 1,
-            userName: "Arun Kumar",
-            userPhone: "9876543210",
-            rewardTitle: "Soap",
-            rewardImage: "https://5.imimg.com/data5/SELLER/Default/2022/11/FC/TD/HH/142168408/hamam-soap-500x500.jpg",
-            orbitsUsed: 500,
-            requestDate: "2024-08-15T10:30:00",
-            status: "pending",
-            userAddress: "123 Main St, Chennai, Tamil Nadu"
-        },
-        {
-            id: 2,
-            userId: 2,
-            userName: "Priya Sharma",
-            userPhone: "9876501234",
-            rewardTitle: "Tooth brush",
-            rewardImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiL88k66TSLG1Qt5Ob161uLpF1Y_Opyz7RoyP8OUN8HZ_dNMH3XdwX_jPoebmU20Lp5S4&usqp=CAU",
-            orbitsUsed: 800,
-            requestDate: "2024-08-14T15:45:00",
-            status: "approved",
-            userAddress: "456 Oak Ave, Mumbai, Maharashtra"
-        },
-        {
-            id: 3,
-            userId: 3,
-            userName: "Ravi Raj",
-            userPhone: "9123456780",
-            rewardTitle: "Bluetooth Speaker",
-            rewardImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTkzm330_QXVLpQJnT6jKW3ixSYYI9Vka9t6Q&s",
-            orbitsUsed: 1000,
-            requestDate: "2024-08-13T09:20:00",
-            status: "approved",
-            userAddress: "789 Pine Rd, Bangalore, Karnataka"
-        },
-        {
-            id: 4,
-            userId: 4,
-            userName: "Sneha Patel",
-            userPhone: "9988776655",
-            rewardTitle: "Paste",
-            rewardImage: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQv06DseW8dCGPtlgwZ38P8kOjuogq8XJAHkg&s",
-            orbitsUsed: 1500,
-            requestDate: "2024-08-12T14:10:00",
-            status: "pending",
-            userAddress: "321 Cedar St, Delhi, Delhi"
-        },
-        {
-            id: 5,
-            userId: 5,
-            userName: "Karthik",
-            userPhone: "9090909090",
-            rewardTitle: "Soap",
-            rewardImage: "https://5.imimg.com/data5/SELLER/Default/2022/11/FC/TD/HH/142168408/hamam-soap-500x500.jpg",
-            orbitsUsed: 500,
-            requestDate: "2024-08-11T11:30:00",
-            status: "approved",
-            userAddress: "654 Maple Dr, Hyderabad, Telangana"
-        }
-    ];
+    // Fetch redemption requests from API
+    const { data: redemptionData, error, isLoading } = useGetAdminRedemptionsQuery();
+
+    // Transform API response to match component structure
+    const redemptionRequests = useMemo(() => {
+        if (!redemptionData || !Array.isArray(redemptionData)) return [];
+
+        return redemptionData.map(request => ({
+            id: request._id,
+            userId: request.userId?._id,
+            userName: request.userId?.username || 'Unknown User',
+            userPhone: request.userId?.phone || 'N/A',
+            rewardTitle: request.offerId?.title || 'Unknown Offer',
+            rewardImage: request.offerId?.imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzNkMzMC42Mjc0IDM2IDM2IDMwLjYyNzQgMzYgMjRDMzYgMTcuMzcyNiAzMC42Mjc0IDEyIDI0IDEyQzE3LjM3MjYgMTIgMTIgMTcuMzcyNiAxMiAyNEMxMiAzMC42Mjc0IDE3LjM3MjYgMzYgMjQgMzZaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0yNCAyOEwyNCAyNCIgc3Ryb2tlPSIjOUNBM0FGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjQgMjBIMjQiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+',
+            orbitsUsed: request.amount || 0,
+            requestDate: request.createdAt,
+            status: request.status || 'pending',
+            userAddress: "Address not provided", // API doesn't include address
+            description: request.offerId?.description || '',
+            orbitCost: request.offerId?.orbitCost || 0
+        }));
+    }, [redemptionData]);
 
     const filteredAndSortedRequests = useMemo(() => {
         let filtered = redemptionRequests.filter((request) => {
@@ -100,11 +60,12 @@ const RedemptionReq = () => {
                 return aValue < bValue ? 1 : -1;
             }
         });
-    }, [searchTerm, statusFilter, sortBy, sortOrder]);
+    }, [redemptionRequests, searchTerm, statusFilter, sortBy, sortOrder]);
 
     const handleStatusUpdate = (requestId, newStatus) => {
         alert(`Request #${requestId} status updated to: ${newStatus}`);
-        // In real app, this would update the database
+        // TODO: Implement actual API call to update status
+        // You would typically call an update mutation here
     };
 
     const handleSort = (field) => {
@@ -119,7 +80,14 @@ const RedemptionReq = () => {
     const getStatusBadge = (status) => {
         const styles = {
             pending: { backgroundColor: '#FFF3CD', color: '#856404', border: '1px solid #FFEAA7' },
-            approved: { backgroundColor: '#D4EDDA', color: '#155724', border: '1px solid #C3E6CB' }
+            approved: { backgroundColor: '#D4EDDA', color: '#155724', border: '1px solid #C3E6CB' },
+            rejected: { backgroundColor: '#F8D7DA', color: '#721C24', border: '1px solid #F5C6CB' }
+        };
+
+        const icons = {
+            pending: <Clock size={12} style={{ marginRight: '4px' }} />,
+            approved: <CheckCircle size={12} style={{ marginRight: '4px' }} />,
+            rejected: <User size={12} style={{ marginRight: '4px' }} />
         };
 
         return (
@@ -127,8 +95,7 @@ const RedemptionReq = () => {
                 ...statusBadgeStyle,
                 ...styles[status]
             }}>
-                {status === 'pending' && <Clock size={12} style={{ marginRight: '4px' }} />}
-                {status === 'approved' && <CheckCircle size={12} style={{ marginRight: '4px' }} />}
+                {icons[status]}
                 {status.charAt(0).toUpperCase() + status.slice(1)}
             </span>
         );
@@ -144,8 +111,39 @@ const RedemptionReq = () => {
         });
     };
 
+    // Loading state
+    if (isLoading) {
+        return (
+            <div style={containerStyle}>
+                <div style={maxWidthStyle}>
+                    <div style={loadingStyle}>
+                        <Gift size={48} style={{ color: 'var(--secondary-text)' }} />
+                        <p>Loading redemption requests...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div style={containerStyle}>
+                <div style={maxWidthStyle}>
+                    <div style={errorStyle}>
+                        <p style={errorTitleStyle}>Error loading redemption requests</p>
+                        <p style={errorSubtitleStyle}>
+                            {error?.data?.message || error?.message || 'Failed to fetch redemption requests'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     const pendingCount = redemptionRequests.filter(req => req.status === 'pending').length;
     const approvedCount = redemptionRequests.filter(req => req.status === 'approved').length;
+    const rejectedCount = redemptionRequests.filter(req => req.status === 'rejected').length;
 
     return (
         <div style={containerStyle}>
@@ -220,6 +218,7 @@ const RedemptionReq = () => {
                                 <option value="all">All Status</option>
                                 <option value="pending">Pending</option>
                                 <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
                             </select>
 
                             <select
@@ -288,18 +287,22 @@ const RedemptionReq = () => {
                                                             src={request.rewardImage}
                                                             alt={request.rewardTitle}
                                                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                                            onError={(e) => {
+                                                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzNkMzMC42Mjc0IDM2IDM2IDMwLjYyNzQgMzYgMjRDMzYgMTcuMzcyNiAzMC42Mjc0IDEyIDI0IDEyQzE3LjM3MjYgMTIgMTIgMTcuMzcyNiAxMiAyNEMxMiAzMC42Mjc0IDE3LjM3MjYgMzYgMjQgMzZaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0yNCAyOEwyNCAyNCIgc3Ryb2tlPSIjOUNBM0FGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjQgMjBIMjQiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+';
+                                                                e.target.onerror = null; // Prevent infinite loop
+                                                            }}
                                                         />
                                                     </div>
                                                     <div>
                                                         <p style={rewardTitleStyle}>{request.rewardTitle}</p>
-                                                        <p style={requestIdStyle}>Request #{request.id}</p>
+                                                        <p style={requestIdStyle}>Request #{request.id.slice(-8)}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td style={tdStyle}>
                                                 <div style={userCellStyle}>
                                                     <div style={avatarStyle}>
-                                                        {request.userName.charAt(0)}
+                                                        {request.userName.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
                                                         <p style={userNameStyle}>{request.userName}</p>
@@ -325,14 +328,24 @@ const RedemptionReq = () => {
                                             <td style={tdStyle}>
                                                 <div style={actionsCellStyle}>
                                                     {request.status === 'pending' ? (
-                                                        <button
-                                                            onClick={() => handleStatusUpdate(request.id, 'approved')}
-                                                            style={{ ...actionButtonStyle, backgroundColor: '#16a34a' }}
-                                                        >
-                                                            Approve
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleStatusUpdate(request.id, 'approved')}
+                                                                style={{ ...actionButtonStyle, backgroundColor: '#16a34a', marginRight: '8px' }}
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleStatusUpdate(request.id, 'rejected')}
+                                                                style={{ ...actionButtonStyle, backgroundColor: '#dc2626' }}
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </>
                                                     ) : (
-                                                        <span style={approvedLabelStyle}>Approved</span>
+                                                        <span style={approvedLabelStyle}>
+                                                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>
@@ -344,7 +357,11 @@ const RedemptionReq = () => {
                                             <div style={emptyContentStyle}>
                                                 <Gift size={48} style={{ color: '#d1d5db' }} />
                                                 <p style={emptyTitleStyle}>No redemption requests found</p>
-                                                <p style={emptySubtitleStyle}>Try adjusting your search or filter criteria</p>
+                                                <p style={emptySubtitleStyle}>
+                                                    {searchTerm || statusFilter !== 'all'
+                                                        ? 'Try adjusting your search or filter criteria'
+                                                        : 'No redemption requests have been made yet'}
+                                                </p>
                                             </div>
                                         </td>
                                     </tr>
@@ -391,6 +408,41 @@ const subtitleStyle = {
     color: 'var(--secondary-text)',
     margin: '0',
     fontSize: '16px'
+};
+
+const loadingStyle = {
+    backgroundColor: 'var(--card-background)',
+    padding: '48px',
+    borderRadius: '12px',
+    border: '1px solid var(--card-border)',
+    textAlign: 'center',
+    color: 'var(--secondary-text)',
+    fontSize: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '16px'
+};
+
+const errorStyle = {
+    backgroundColor: 'var(--card-background)',
+    padding: '48px',
+    borderRadius: '12px',
+    border: '1px solid var(--card-border)',
+    textAlign: 'center'
+};
+
+const errorTitleStyle = {
+    color: 'var(--primary-text)',
+    fontWeight: '500',
+    margin: '0 0 8px 0',
+    fontSize: '18px'
+};
+
+const errorSubtitleStyle = {
+    color: 'var(--secondary-text)',
+    fontSize: '14px',
+    margin: '0'
 };
 
 const statsGridStyle = {

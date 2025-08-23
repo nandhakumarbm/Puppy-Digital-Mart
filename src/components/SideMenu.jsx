@@ -1,9 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { clearAuth } from "../utils/auth";
+import { clearAuth, getUser } from "../utils/auth";
 
 function SideMenu({ isOpen, onClose }) {
     const navigate = useNavigate();
+    const user = getUser();
 
     const styles = {
         overlay: {
@@ -15,7 +16,7 @@ function SideMenu({ isOpen, onClose }) {
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             opacity: isOpen ? 1 : 0,
             visibility: isOpen ? "visible" : "hidden",
-            transition: "opacity 0.3s ease, visibil ity 0.3s ease",
+            transition: "opacity 0.3s ease, visibility 0.3s ease",
             zIndex: 9999,
             WebkitBackdropFilter: "blur(3px)",
             backdropFilter: "blur(3px)",
@@ -60,18 +61,6 @@ function SideMenu({ isOpen, onClose }) {
             flex: 1,
             minWidth: 0,
         },
-        logo: {
-            height: "32px",
-            width: "100%",
-            maxWidth: "180px",
-            borderRadius: "6px",
-            objectFit: "contain",
-            border: "2px solid rgba(255, 255, 255, 0.2)",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-            backgroundColor: "#fff",
-            padding: "4px 8px",
-            flexShrink: 0,
-        },
         closeBtn: {
             background: "rgba(255, 255, 255, 0.15)",
             border: "none",
@@ -93,7 +82,7 @@ function SideMenu({ isOpen, onClose }) {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minHeight: 0, // Important for proper flexbox behavior
+            minHeight: 0,
         },
         menuItemsContainer: {
             flex: 1,
@@ -115,14 +104,11 @@ function SideMenu({ isOpen, onClose }) {
             textAlign: "left",
             gap: "14px",
             position: "relative",
-            margin: "0",
-            borderRadius: "0",
             minHeight: "48px",
             WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation",
         },
         logoutContainer: {
-            marginTop: "auto", // This pushes the logout to the bottom
+            marginTop: "auto",
             flexShrink: 0,
         },
         logoutItem: {
@@ -138,28 +124,14 @@ function SideMenu({ isOpen, onClose }) {
             transition: "all 0.2s ease",
             textAlign: "left",
             gap: "14px",
-            position: "relative",
-            margin: "0",
-            borderRadius: "0",
             minHeight: "48px",
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation",
             borderTop: "1px solid #f3f4f6",
             width: "100%",
         },
-        menuIcon: {
-            fontSize: "22px",
-            width: "24px",
-            textAlign: "center",
-            flexShrink: 0,
-            opacity: 0.8,
-        },
-        menuText: {
-            fontSize: "16px",
-            fontWeight: "500",
-            letterSpacing: "0.2px",
-            flex: 1,
-            minWidth: 0,
+        divider: {
+            height: "1px",
+            background: "#f3f4f6",
+            margin: "2px 20px",
         },
         activeBorder: {
             position: "absolute",
@@ -179,11 +151,6 @@ function SideMenu({ isOpen, onClose }) {
             background: "#dc2626",
             transition: "width 0.2s ease",
         },
-        divider: {
-            height: "1px",
-            background: "#f3f4f6",
-            margin: "2px 20px",
-        }
     };
 
     const handleNavigate = (path) => {
@@ -192,11 +159,7 @@ function SideMenu({ isOpen, onClose }) {
     };
 
     const handleLogout = () => {
-        // Show confirmation dialog
-        const confirmLogout = window.confirm("Are you sure you want to logout?");
-
-        if (confirmLogout) {
-            // Clear any stored authentication data
+        if (window.confirm("Are you sure you want to logout?")) {
             clearAuth();
             onClose();
             window.location.reload();
@@ -211,26 +174,27 @@ function SideMenu({ isOpen, onClose }) {
     ];
 
     const adminMenuItems = [
-        { path: "/admin/users", icon: "👥", label: "User Management" },
-        { path: "/admin/redeemreq", icon: "📋", label: "Redemption Requests" },
+        { path: "/users", icon: "👥", label: "Users" },
+        { path: "/redeemreq", icon: "📋", label: "Redemption Requests" },
+        { path: "/addItems", icon: "➕", label: "Add Items" }
     ];
 
-    // Prevent body scroll when menu is open
+    const itemsToShow = user?.role === "admin" ? adminMenuItems : menuItems;
+
     React.useEffect(() => {
         if (isOpen) {
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
+            document.body.style.overflow = "hidden";
+            document.body.style.position = "fixed";
+            document.body.style.width = "100%";
         } else {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            document.body.style.overflow = "";
+            document.body.style.position = "";
+            document.body.style.width = "";
         }
-
         return () => {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            document.body.style.overflow = "";
+            document.body.style.position = "";
+            document.body.style.width = "";
         };
     }, [isOpen]);
 
@@ -242,94 +206,36 @@ function SideMenu({ isOpen, onClose }) {
                     <div style={styles.logoContainer}>
                         <p>Puppy Digital Mart</p>
                     </div>
-                    <button
-                        style={styles.closeBtn}
-                        onClick={onClose}
-                        onTouchStart={(e) => {
-                            e.target.style.background = "rgba(255, 255, 255, 0.25)";
-                            e.target.style.transform = "scale(0.95)";
-                        }}
-                        onTouchEnd={(e) => {
-                            e.target.style.background = "rgba(255, 255, 255, 0.15)";
-                            e.target.style.transform = "scale(1)";
-                        }}
-                        onMouseEnter={(e) => {
-                            e.target.style.background = "rgba(255, 255, 255, 0.25)";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.background = "rgba(255, 255, 255, 0.15)";
-                        }}
-                        aria-label="Close menu"
-                    >
+                    <button style={styles.closeBtn} onClick={onClose}>
                         ✕
                     </button>
                 </div>
 
                 <div style={styles.menuContent}>
-                    {/* Regular menu items container */}
                     <div style={styles.menuItemsContainer}>
-                        {menuItems.map((item, index) => (
+                        {itemsToShow.map((item, index) => (
                             <React.Fragment key={item.path}>
                                 <button
                                     style={styles.menuItem}
                                     onClick={() => handleNavigate(item.path)}
-                                    onTouchStart={(e) => {
-                                        e.currentTarget.style.background = "#f1f5f9";
-                                        e.currentTarget.querySelector('.active-border').style.width = "4px";
-                                    }}
-                                    onTouchEnd={(e) => {
-                                        setTimeout(() => {
-                                            e.currentTarget.style.background = "transparent";
-                                            e.currentTarget.querySelector('.active-border').style.width = "0px";
-                                        }, 150);
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = "#f8fafc";
-                                        e.currentTarget.querySelector('.active-border').style.width = "4px";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = "transparent";
-                                        e.currentTarget.querySelector('.active-border').style.width = "0px";
-                                    }}
-                                    aria-label={`Navigate to ${item.label}`}
                                 >
                                     <div className="active-border" style={styles.activeBorder}></div>
-                                    <span style={styles.menuIcon}>{item.icon}</span>
-                                    <span style={styles.menuText}>{item.label}</span>
+                                    <span>{item.icon}</span>
+                                    <span>{item.label}</span>
                                 </button>
-                                {index < menuItems.length - 1 && <div style={styles.divider} />}
+                                {index < itemsToShow.length - 1 && <div style={styles.divider} />}
                             </React.Fragment>
                         ))}
                     </div>
 
-                    {/* Logout button container - pushed to bottom */}
                     <div style={styles.logoutContainer}>
                         <button
                             style={styles.logoutItem}
                             onClick={handleLogout}
-                            onTouchStart={(e) => {
-                                e.currentTarget.style.background = "#fef2f2";
-                                e.currentTarget.querySelector('.logout-border').style.width = "4px";
-                            }}
-                            onTouchEnd={(e) => {
-                                setTimeout(() => {
-                                    e.currentTarget.style.background = "transparent";
-                                    e.currentTarget.querySelector('.logout-border').style.width = "0px";
-                                }, 150);
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "#fef2f2";
-                                e.currentTarget.querySelector('.logout-border').style.width = "4px";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = "transparent";
-                                e.currentTarget.querySelector('.logout-border').style.width = "0px";
-                            }}
-                            aria-label="Logout"
                         >
                             <div className="logout-border" style={styles.logoutBorder}></div>
-                            <span style={styles.menuIcon}>🚪</span>
-                            <span style={styles.menuText}>Logout</span>
+                            <span>🚪</span>
+                            <span>Logout</span>
                         </button>
                     </div>
                 </div>

@@ -1,746 +1,644 @@
 import React, { useState } from 'react';
-import { Plus, Upload, X, Image, Video, Package } from 'lucide-react';
+import { Plus, Upload, X, Image, Package, AlertCircle, CheckCircle } from 'lucide-react';
+import { useCreateAdMutation } from '../../utils/apiSlice';
 
 const AddItems = () => {
   const [activeTab, setActiveTab] = useState('items');
   const [items, setItems] = useState([]);
-  const [ads, setAds] = useState([]);
-  
+
+  // API mutation hook
+  const [createAd, { isLoading: isCreatingAd }] = useCreateAdMutation();
+
   // Item form state
   const [itemForm, setItemForm] = useState({
     name: '',
     image: null,
     imagePreview: ''
   });
-  
+
   // Ad form state
   const [adForm, setAdForm] = useState({
     title: '',
-    type: 'image',
-    media: null,
-    mediaPreview: ''
+    description: '',
+    mediaUrl: '',
+    type: 'image'
   });
 
-  const handleImageUpload = (e, type) => {
+  // UI state
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (type === 'item') {
-          setItemForm(prev => ({
-            ...prev,
-            image: file,
-            imagePreview: event.target.result
-          }));
-        } else {
-          setAdForm(prev => ({
-            ...prev,
-            media: file,
-            mediaPreview: event.target.result
-          }));
-        }
+        setItemForm(prev => ({
+          ...prev,
+          image: file,
+          imagePreview: event.target.result
+        }));
       };
       reader.readAsDataURL(file);
     }
   };
 
   const addItem = () => {
-    if (itemForm.name && itemForm.image) {
-      setItems(prev => [...prev, {
-        id: Date.now(),
-        name: itemForm.name,
-        image: itemForm.imagePreview
-      }]);
-      setItemForm({ name: '', image: null, imagePreview: '' });
+    if (!itemForm.name.trim()) {
+      showNotification('Please enter an item name', 'error');
+      return;
     }
+    if (!itemForm.image) {
+      showNotification('Please select an image', 'error');
+      return;
+    }
+
+    setItems(prev => [...prev, {
+      id: Date.now(),
+      name: itemForm.name.trim(),
+      image: itemForm.imagePreview
+    }]);
+
+    setItemForm({ name: '', image: null, imagePreview: '' });
+    showNotification('Item added successfully');
   };
 
-  const addAd = () => {
-    if (adForm.title && adForm.media) {
-      setAds(prev => [...prev, {
-        id: Date.now(),
-        title: adForm.title,
-        type: adForm.type,
-        media: adForm.mediaPreview
-      }]);
-      setAdForm({ title: '', type: 'image', media: null, mediaPreview: '' });
+  const createAdvertisement = async () => {
+    // Validation
+    if (!adForm.title.trim()) {
+      showNotification('Please enter an advertisement title', 'error');
+      return;
+    }
+    if (!adForm.description.trim()) {
+      showNotification('Please enter a description', 'error');
+      return;
+    }
+    if (!adForm.mediaUrl.trim()) {
+      showNotification('Please enter a media URL', 'error');
+      return;
+    }
+
+    // URL validation
+    const urlPattern = /^https?:\/\/.+/;
+    if (!urlPattern.test(adForm.mediaUrl)) {
+      showNotification('Please enter a valid URL (starting with http:// or https://)', 'error');
+      return;
+    }
+
+    try {
+      const adData = {
+        title: adForm.title.trim(),
+        description: adForm.description.trim(),
+        mediaUrl: adForm.mediaUrl.trim(),
+        type: adForm.type
+      };
+
+      await createAd(adData).unwrap();
+
+      // Reset form on success
+      setAdForm({
+        title: '',
+        description: '',
+        mediaUrl: '',
+        type: 'image'
+      });
+
+      showNotification('Advertisement created successfully');
+    } catch (error) {
+      const errorMessage = error?.data?.message || error?.message || 'Failed to create advertisement';
+      showNotification(errorMessage, 'error');
     }
   };
 
   const removeItem = (id) => {
     setItems(prev => prev.filter(item => item.id !== id));
+    showNotification('Item removed');
   };
 
-  const removeAd = (id) => {
-    setAds(prev => prev.filter(ad => ad.id !== id));
+  const isValidUrl = (string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#F9FAFB',
-      padding: '16px',
-      fontFamily: 'Poppins, sans-serif'
-    }}>
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        backgroundColor: '#FFFFFF',
-        borderRadius: '16px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-        overflow: 'hidden',
-        border: '1px solid #E5E7EB'
-      }}>
-        {/* Header */}
-        <div style={{
-          backgroundColor: '#7C3AED',
-          color: '#FFFFFF',
-          padding: '24px 20px',
-          textAlign: 'center'
-        }}>
-          <h1 style={{
-            margin: '0',
-            fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-            fontWeight: '600',
-            fontFamily: 'Poppins, sans-serif'
-          }}>Admin Dashboard</h1>
-          <p style={{
-            margin: '8px 0 0 0',
-            opacity: '0.9',
-            fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-            fontFamily: 'Poppins, sans-serif'
-          }}>Manage Items & Advertisements</p>
-        </div>
+    <div style={containerStyle}>
+      <div style={maxWidthStyle}>
 
-        {/* Tab Navigation */}
-        <div style={{
-          display: 'flex',
-          flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
-          backgroundColor: '#F9FAFB',
-          borderBottom: '2px solid #E5E7EB'
-        }}>
-          <button
-            onClick={() => setActiveTab('items')}
-            style={{
-              flex: '1',
-              padding: '16px 20px',
-              border: 'none',
-              backgroundColor: activeTab === 'items' ? '#7C3AED' : 'transparent',
-              color: activeTab === 'items' ? '#FFFFFF' : '#6B7280',
-              fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              fontFamily: 'Poppins, sans-serif'
-            }}
-          >
-            <Package size={20} />
-            Add Items
-          </button>
-          <button
-            onClick={() => setActiveTab('ads')}
-            style={{
-              flex: '1',
-              padding: '16px 20px',
-              border: 'none',
-              backgroundColor: activeTab === 'ads' ? '#6366F1' : 'transparent',
-              color: activeTab === 'ads' ? '#FFFFFF' : '#6B7280',
-              fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              fontFamily: 'Poppins, sans-serif'
-            }}
-          >
-            <Video size={20} />
-            Add Advertisements
-          </button>
-        </div>
+        {/* Notification */}
+        {notification && (
+          <div style={{
+            ...notificationStyle,
+            backgroundColor: notification.type === 'error' ? '#FEF2F2' : '#F0FDF4',
+            borderColor: notification.type === 'error' ? '#FECACA' : '#BBF7D0',
+            color: notification.type === 'error' ? '#991B1B' : '#166534'
+          }}>
+            {notification.type === 'error' ?
+              <AlertCircle size={20} /> :
+              <CheckCircle size={20} />
+            }
+            <span>{notification.message}</span>
+          </div>
+        )}
 
-        <div style={{ padding: 'clamp(16px, 4vw, 32px)' }}>
-          {activeTab === 'items' && (
-            <div>
-              {/* Add Item Form */}
-              <div style={{
-                backgroundColor: '#FFFFFF',
-                padding: 'clamp(20px, 4vw, 32px)',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.1)',
-                marginBottom: '24px',
-                border: '1px solid #C7D2FE'
-              }}>
-                <h2 style={{
-                  margin: '0 0 20px 0',
-                  color: '#1F2937',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
-                  fontFamily: 'Poppins, sans-serif',
-                  fontWeight: '600'
-                }}>
-                  <Plus size={24} />
-                  Add New Item
-                </h2>
-                
-                <div style={{ 
-                  display: 'grid', 
-                  gap: '20px',
-                  gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))'
-                }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: '600',
-                      color: '#1F2937',
-                      fontSize: '0.9rem',
-                      fontFamily: 'Poppins, sans-serif'
-                    }}>Item Name</label>
-                    <input
-                      type="text"
-                      value={itemForm.name}
-                      onChange={(e) => setItemForm(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter item name"
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '2px solid #C7D2FE',
-                        borderRadius: '8px',
-                        fontSize: '1rem',
-                        transition: 'all 0.3s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                        fontFamily: 'Poppins, sans-serif',
-                        color: '#1F2937'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#7C3AED'}
-                      onBlur={(e) => e.target.style.borderColor = '#C7D2FE'}
-                    />
-                  </div>
-                  
-                  <div style={{ gridColumn: window.innerWidth <= 768 ? '1' : '1 / -1' }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: '600',
-                      color: '#1F2937',
-                      fontSize: '0.9rem',
-                      fontFamily: 'Poppins, sans-serif'
-                    }}>Item Image</label>
-                    <div style={{
-                      border: '2px dashed #C7D2FE',
-                      borderRadius: '8px',
-                      padding: 'clamp(20px, 4vw, 40px)',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      backgroundColor: itemForm.imagePreview ? 'transparent' : '#F9FAFB',
-                      minHeight: window.innerWidth <= 768 ? '200px' : '250px'
-                    }}
-                    onMouseEnter={(e) => e.target.style.borderColor = '#7C3AED'}
-                    onMouseLeave={(e) => e.target.style.borderColor = '#C7D2FE'}>
+        <div style={cardStyle}> 
+
+          {/* Tab Navigation */}
+          <div style={tabContainerStyle}>
+            <button
+              onClick={() => setActiveTab('items')}
+              style={{
+                ...tabButtonStyle,
+                backgroundColor: activeTab === 'items' ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === 'items' ? 'white' : 'var(--secondary-text)'
+              }}
+            >
+              <Package size={20} />
+              Items
+            </button>
+            <button
+              onClick={() => setActiveTab('ads')}
+              style={{
+                ...tabButtonStyle,
+                backgroundColor: activeTab === 'ads' ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === 'ads' ? 'white' : 'var(--secondary-text)'
+              }}
+            >
+              <Image size={20} />
+              Advertisements
+            </button>
+          </div>
+
+          <div style={contentStyle}>
+            {activeTab === 'items' && (
+              <div>
+                {/* Add Item Form */}
+                <div style={formSectionStyle}>
+                  <h2 style={sectionTitleStyle}>
+                    <Plus size={24} />
+                    Add New Item
+                  </h2>
+
+                  <div style={formGridStyle}>
+                    <div style={inputGroupStyle}>
+                      <label style={labelStyle}>Item Name *</label>
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'item')}
-                        style={{ display: 'none' }}
-                        id="item-image-upload"
+                        type="text"
+                        value={itemForm.name}
+                        onChange={(e) => setItemForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter item name"
+                        style={inputStyle}
                       />
-                      <label htmlFor="item-image-upload" style={{ cursor: 'pointer' }}>
-                        {itemForm.imagePreview ? (
-                          <img
-                            src={itemForm.imagePreview}
-                            alt="Preview"
-                            style={{
-                              maxWidth: '100%',
-                              maxHeight: '200px',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                            }}
-                          />
-                        ) : (
-                          <div>
-                            <Upload size={window.innerWidth <= 768 ? 36 : 48} style={{ color: '#6B7280', marginBottom: '12px' }} />
-                            <p style={{ 
-                              margin: '0', 
-                              color: '#6B7280', 
-                              fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-                              fontFamily: 'Poppins, sans-serif'
-                            }}>
-                              Click to upload image
-                            </p>
-                          </div>
-                        )}
-                      </label>
                     </div>
-                  </div>
-                  
-                  <button
-                    onClick={addItem}
-                    style={{
-                      backgroundColor: '#7C3AED',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      padding: '14px 24px',
-                      borderRadius: '8px',
-                      fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
-                      fontFamily: 'Poppins, sans-serif',
-                      gridColumn: window.innerWidth <= 768 ? '1' : '1 / -1'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#6D28D9';
-                      e.target.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = '#7C3AED';
-                      e.target.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <Plus size={20} />
-                    Add Item
-                  </button>
-                </div>
-              </div>
 
-              {/* Items List */}
-              <div style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '12px',
-                padding: 'clamp(20px, 4vw, 32px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                border: '1px solid #E5E7EB'
-              }}>
-                <h3 style={{ 
-                  margin: '0 0 20px 0', 
-                  color: '#1F2937', 
-                  fontSize: 'clamp(1rem, 3vw, 1.3rem)',
-                  fontFamily: 'Poppins, sans-serif',
-                  fontWeight: '600'
-                }}>Added Items ({items.length})</h3>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: window.innerWidth <= 768 
-                    ? 'repeat(auto-fit, minmax(200px, 1fr))' 
-                    : 'repeat(auto-fit, minmax(250px, 1fr))',
-                  gap: 'clamp(12px, 3vw, 20px)'
-                }}>
-                  {items.map(item => (
-                    <div key={item.id} style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                      position: 'relative',
-                      transition: 'transform 0.3s ease',
-                      border: '1px solid #E5E7EB'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          backgroundColor: '#EF4444',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '50%',
-                          width: '28px',
-                          height: '28px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          zIndex: 1
-                        }}
-                      >
-                        <X size={14} />
-                      </button>
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        style={{
-                          width: '100%',
-                          height: window.innerWidth <= 768 ? '120px' : '150px',
-                          objectFit: 'cover',
-                          borderRadius: '8px',
-                          marginBottom: '12px'
-                        }}
-                      />
-                      <h4 style={{ 
-                        margin: '0', 
-                        color: '#1F2937', 
-                        fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-                        fontFamily: 'Poppins, sans-serif',
-                        fontWeight: '500'
-                      }}>{item.name}</h4>
-                    </div>
-                  ))}
-                </div>
-                {items.length === 0 && (
-                  <p style={{
-                    textAlign: 'center',
-                    color: '#6B7280',
-                    fontSize: '1rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    padding: '40px 20px'
-                  }}>No items added yet</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'ads' && (
-            <div>
-              {/* Add Advertisement Form */}
-              <div style={{
-                backgroundColor: '#FFFFFF',
-                padding: 'clamp(20px, 4vw, 32px)',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.1)',
-                marginBottom: '24px',
-                border: '1px solid #C7D2FE'
-              }}>
-                <h2 style={{
-                  margin: '0 0 20px 0',
-                  color: '#1F2937',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
-                  fontFamily: 'Poppins, sans-serif',
-                  fontWeight: '600'
-                }}>
-                  <Video size={24} />
-                  Add New Advertisement
-                </h2>
-                
-                <div style={{ 
-                  display: 'grid', 
-                  gap: '20px',
-                  gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))'
-                }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: '600',
-                      color: '#1F2937',
-                      fontSize: '0.9rem',
-                      fontFamily: 'Poppins, sans-serif'
-                    }}>Advertisement Title</label>
-                    <input
-                      type="text"
-                      value={adForm.title}
-                      onChange={(e) => setAdForm(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter advertisement title"
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '2px solid #C7D2FE',
-                        borderRadius: '8px',
-                        fontSize: '1rem',
-                        transition: 'all 0.3s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                        fontFamily: 'Poppins, sans-serif',
-                        color: '#1F2937'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#6366F1'}
-                      onBlur={(e) => e.target.style.borderColor = '#C7D2FE'}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: '600',
-                      color: '#1F2937',
-                      fontSize: '0.9rem',
-                      fontFamily: 'Poppins, sans-serif'
-                    }}>Media Type</label>
-                    <div style={{ 
-                      display: 'flex', 
-                      gap: '16px',
-                      flexWrap: 'wrap'
-                    }}>
-                      <label style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px', 
-                        cursor: 'pointer',
-                        fontFamily: 'Poppins, sans-serif',
-                        color: '#1F2937'
-                      }}>
+                    <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
+                      <label style={labelStyle}>Item Image *</label>
+                      <div style={uploadAreaStyle}>
                         <input
-                          type="radio"
-                          value="image"
-                          checked={adForm.type === 'image'}
-                          onChange={(e) => setAdForm(prev => ({ ...prev, type: e.target.value }))}
-                          style={{ cursor: 'pointer' }}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          style={{ display: 'none' }}
+                          id="item-image-upload"
                         />
-                        <Image size={18} />
-                        Image
-                      </label>
-                      <label style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px', 
-                        cursor: 'pointer',
-                        fontFamily: 'Poppins, sans-serif',
-                        color: '#1F2937'
-                      }}>
-                        <input
-                          type="radio"
-                          value="video"
-                          checked={adForm.type === 'video'}
-                          onChange={(e) => setAdForm(prev => ({ ...prev, type: e.target.value }))}
-                          style={{ cursor: 'pointer' }}
-                        />
-                        <Video size={18} />
-                        Video
-                      </label>
-                    </div>
-                  </div>
-                  
-                  <div style={{ gridColumn: window.innerWidth <= 768 ? '1' : '1 / -1' }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: '600',
-                      color: '#1F2937',
-                      fontSize: '0.9rem',
-                      fontFamily: 'Poppins, sans-serif'
-                    }}>Upload {adForm.type === 'image' ? 'Image' : 'Video'}</label>
-                    <div style={{
-                      border: '2px dashed #C7D2FE',
-                      borderRadius: '8px',
-                      padding: 'clamp(20px, 4vw, 40px)',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      backgroundColor: adForm.mediaPreview ? 'transparent' : '#F9FAFB',
-                      minHeight: window.innerWidth <= 768 ? '200px' : '250px'
-                    }}
-                    onMouseEnter={(e) => e.target.style.borderColor = '#6366F1'}
-                    onMouseLeave={(e) => e.target.style.borderColor = '#C7D2FE'}>
-                      <input
-                        type="file"
-                        accept={adForm.type === 'image' ? 'image/*' : 'video/*'}
-                        onChange={(e) => handleImageUpload(e, 'ad')}
-                        style={{ display: 'none' }}
-                        id="ad-media-upload"
-                      />
-                      <label htmlFor="ad-media-upload" style={{ cursor: 'pointer' }}>
-                        {adForm.mediaPreview ? (
-                          adForm.type === 'image' ? (
+                        <label htmlFor="item-image-upload" style={uploadLabelStyle}>
+                          {itemForm.imagePreview ? (
                             <img
-                              src={adForm.mediaPreview}
+                              src={itemForm.imagePreview}
                               alt="Preview"
-                              style={{
-                                maxWidth: '100%',
-                                maxHeight: '200px',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                              }}
+                              style={previewImageStyle}
                             />
                           ) : (
-                            <video
-                              src={adForm.mediaPreview}
-                              controls
-                              style={{
-                                maxWidth: '100%',
-                                maxHeight: '200px',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                              }}
-                            />
-                          )
-                        ) : (
-                          <div>
-                            <Upload size={window.innerWidth <= 768 ? 36 : 48} style={{ color: '#6B7280', marginBottom: '12px' }} />
-                            <p style={{ 
-                              margin: '0', 
-                              color: '#6B7280', 
-                              fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-                              fontFamily: 'Poppins, sans-serif'
-                            }}>
-                              Click to upload {adForm.type}
-                            </p>
-                          </div>
-                        )}
-                      </label>
+                            <div style={uploadPlaceholderStyle}>
+                              <Upload size={48} style={{ color: 'var(--secondary-text)' }} />
+                              <p style={uploadTextStyle}>
+                                Click to upload image
+                              </p>
+                              <p style={uploadSubtextStyle}>
+                                Supports JPG, PNG, GIF up to 10MB
+                              </p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <button
-                    onClick={addAd}
-                    style={{
-                      backgroundColor: '#6366F1',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      padding: '14px 24px',
-                      borderRadius: '8px',
-                      fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                      fontFamily: 'Poppins, sans-serif',
-                      gridColumn: window.innerWidth <= 768 ? '1' : '1 / -1'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#4F46E5';
-                      e.target.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = '#6366F1';
-                      e.target.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <Plus size={20} />
-                    Add Advertisement
-                  </button>
-                </div>
-              </div>
 
-              {/* Ads List */}
-              <div style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '12px',
-                padding: 'clamp(20px, 4vw, 32px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                border: '1px solid #E5E7EB'
-              }}>
-                <h3 style={{ 
-                  margin: '0 0 20px 0', 
-                  color: '#1F2937', 
-                  fontSize: 'clamp(1rem, 3vw, 1.3rem)',
-                  fontFamily: 'Poppins, sans-serif',
-                  fontWeight: '600'
-                }}>Added Advertisements ({ads.length})</h3>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: window.innerWidth <= 768 
-                    ? 'repeat(auto-fit, minmax(250px, 1fr))' 
-                    : 'repeat(auto-fit, minmax(300px, 1fr))',
-                  gap: 'clamp(12px, 3vw, 20px)'
-                }}>
-                  {ads.map(ad => (
-                    <div key={ad.id} style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                      position: 'relative',
-                      transition: 'transform 0.3s ease',
-                      border: '1px solid #E5E7EB'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                      <button
-                        onClick={() => removeAd(ad.id)}
-                        style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          backgroundColor: '#EF4444',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '50%',
-                          width: '28px',
-                          height: '28px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          zIndex: 1
-                        }}
-                      >
-                        <X size={14} />
-                      </button>
-                      {ad.type === 'image' ? (
-                        <img
-                          src={ad.media}
-                          alt={ad.title}
-                          style={{
-                            width: '100%',
-                            height: window.innerWidth <= 768 ? '120px' : '150px',
-                            objectFit: 'cover',
-                            borderRadius: '8px',
-                            marginBottom: '12px'
-                          }}
-                        />
-                      ) : (
-                        <video
-                          src={ad.media}
-                          controls
-                          style={{
-                            width: '100%',
-                            height: window.innerWidth <= 768 ? '120px' : '150px',
-                            borderRadius: '8px',
-                            marginBottom: '12px'
-                          }}
-                        />
-                      )}
-                      <h4 style={{ 
-                        margin: '0 0 4px 0', 
-                        color: '#1F2937', 
-                        fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
-                        fontFamily: 'Poppins, sans-serif',
-                        fontWeight: '500'
-                      }}>{ad.title}</h4>
-                      <p style={{ 
-                        margin: '0', 
-                        color: '#6B7280', 
-                        textTransform: 'capitalize',
-                        fontSize: '0.85rem',
-                        fontFamily: 'Poppins, sans-serif'
-                      }}>
-                        {ad.type}
-                      </p>
-                    </div>
-                  ))}
+                    <button
+                      onClick={addItem}
+                      style={{ ...primaryButtonStyle, gridColumn: '1 / -1' }}
+                    >
+                      <Plus size={20} />
+                      Add Item
+                    </button>
+                  </div>
                 </div>
-                {ads.length === 0 && (
-                  <p style={{
-                    textAlign: 'center',
-                    color: '#6B7280',
-                    fontSize: '1rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    padding: '40px 20px'
-                  }}>No advertisements added yet</p>
-                )}
+
+                {/* Items List */}
+                <div style={listSectionStyle}>
+                  <h3 style={listTitleStyle}>Added Items ({items.length})</h3>
+
+                  {items.length === 0 ? (
+                    <div style={emptyStateStyle}>
+                      <Package size={48} style={{ color: 'var(--secondary-text)' }} />
+                      <p style={emptyTextStyle}>No items added yet</p>
+                    </div>
+                  ) : (
+                    <div style={itemsGridStyle}>
+                      {items.map(item => (
+                        <div key={item.id} style={itemCardStyle}>
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            style={removeButtonStyle}
+                          >
+                            <X size={14} />
+                          </button>
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            style={itemImageStyle}
+                          />
+                          <h4 style={itemNameStyle}>{item.name}</h4>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {activeTab === 'ads' && (
+              <div>
+                {/* Add Advertisement Form */}
+                <div style={formSectionStyle}>
+                  <h2 style={sectionTitleStyle}>
+                    <Image size={24} />
+                    Create Advertisement
+                  </h2>
+
+                  <div style={formGridStyle}>
+                    <div style={inputGroupStyle}>
+                      <label style={labelStyle}>Title *</label>
+                      <input
+                        type="text"
+                        value={adForm.title}
+                        onChange={(e) => setAdForm(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter advertisement title"
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    <div style={inputGroupStyle}>
+                      <label style={labelStyle}>Media Type *</label>
+                      <select
+                        value={adForm.type}
+                        onChange={(e) => setAdForm(prev => ({ ...prev, type: e.target.value }))}
+                        style={selectStyle}
+                      >
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                      </select>
+                    </div>
+
+                    <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
+                      <label style={labelStyle}>Description *</label>
+                      <textarea
+                        value={adForm.description}
+                        onChange={(e) => setAdForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Enter advertisement description"
+                        style={textareaStyle}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
+                      <label style={labelStyle}>Media URL *</label>
+                      <input
+                        type="url"
+                        value={adForm.mediaUrl}
+                        onChange={(e) => setAdForm(prev => ({ ...prev, mediaUrl: e.target.value }))}
+                        placeholder="https://example.com/media.jpg"
+                        style={{
+                          ...inputStyle,
+                          borderColor: adForm.mediaUrl && !isValidUrl(adForm.mediaUrl) ? '#EF4444' : 'var(--input-border)'
+                        }}
+                      />
+                      {adForm.mediaUrl && !isValidUrl(adForm.mediaUrl) && (
+                        <p style={errorTextStyle}>Please enter a valid URL</p>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={createAdvertisement}
+                      disabled={isCreatingAd}
+                      style={{
+                        ...primaryButtonStyle,
+                        gridColumn: '1 / -1',
+                        opacity: isCreatingAd ? 0.7 : 1,
+                        cursor: isCreatingAd ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {isCreatingAd ? (
+                        <>
+                          <div style={spinnerStyle}></div>
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={20} />
+                          Create Advertisement
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
+};
+
+// Professional styling using CSS variables
+const containerStyle = {
+  backgroundColor: 'var(--background)',
+  minHeight: '100vh',
+  padding: '24px',
+  fontFamily: 'var(--font-family)'
+};
+
+const maxWidthStyle = {
+  maxWidth: '1200px',
+  margin: '0 auto'
+};
+
+const notificationStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  padding: '16px',
+  borderRadius: '8px',
+  border: '1px solid',
+  marginBottom: '24px',
+  fontSize: '14px',
+  fontWeight: '500'
+};
+
+const cardStyle = {
+  backgroundColor: 'var(--card-background)',
+  borderRadius: '16px',
+  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+  border: '1px solid var(--card-border)',
+  overflow: 'hidden'
+};
+
+const headerStyle = {
+  padding: '32px 32px 24px 32px',
+  borderBottom: '1px solid var(--card-border)'
+};
+
+const titleStyle = {
+  fontSize: '28px',
+  fontWeight: '600',
+  color: 'var(--primary-text)',
+  margin: '0 0 8px 0'
+};
+
+const subtitleStyle = {
+  fontSize: '16px',
+  color: 'var(--secondary-text)',
+  margin: '0'
+};
+
+const tabContainerStyle = {
+  display: 'flex',
+  borderBottom: '1px solid var(--card-border)'
+};
+
+const tabButtonStyle = {
+  flex: '1',
+  padding: '16px 24px',
+  border: 'none',
+  fontSize: '16px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  fontFamily: 'var(--font-family)'
+};
+
+const contentStyle = {
+  padding: '32px'
+};
+
+const formSectionStyle = {
+  backgroundColor: 'var(--background)',
+  padding: '24px',
+  borderRadius: '12px',
+  border: '1px solid var(--card-border)',
+  marginBottom: '32px'
+};
+
+const sectionTitleStyle = {
+  fontSize: '20px',
+  fontWeight: '600',
+  color: 'var(--primary-text)',
+  margin: '0 0 24px 0',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px'
+};
+
+const formGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+  gap: '20px'
+};
+
+const inputGroupStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px'
+};
+
+const labelStyle = {
+  fontSize: '14px',
+  fontWeight: '500',
+  color: 'var(--primary-text)'
+};
+
+const inputStyle = {
+  padding: '12px 16px',
+  border: '1px solid var(--input-border)',
+  borderRadius: '8px',
+  fontSize: '14px',
+  outline: 'none',
+  transition: 'border-color 0.2s ease',
+  fontFamily: 'var(--font-family)',
+  backgroundColor: 'var(--card-background)',
+  color: 'var(--primary-text)'
+};
+
+const selectStyle = {
+  ...inputStyle,
+  cursor: 'pointer'
+};
+
+const textareaStyle = {
+  ...inputStyle,
+  resize: 'vertical',
+  minHeight: '80px'
+};
+
+const uploadAreaStyle = {
+  border: '2px dashed var(--input-border)',
+  borderRadius: '8px',
+  transition: 'border-color 0.2s ease'
+};
+
+const uploadLabelStyle = {
+  display: 'block',
+  cursor: 'pointer'
+};
+
+const uploadPlaceholderStyle = {
+  padding: '48px 24px',
+  textAlign: 'center'
+};
+
+const uploadTextStyle = {
+  fontSize: '16px',
+  color: 'var(--primary-text)',
+  margin: '12px 0 4px 0',
+  fontWeight: '500'
+};
+
+const uploadSubtextStyle = {
+  fontSize: '14px',
+  color: 'var(--secondary-text)',
+  margin: '0'
+};
+
+const previewImageStyle = {
+  width: '100%',
+  maxHeight: '200px',
+  objectFit: 'cover',
+  borderRadius: '6px'
+};
+
+const primaryButtonStyle = {
+  backgroundColor: 'var(--accent-primary)',
+  color: 'white',
+  border: 'none',
+  padding: '14px 24px',
+  borderRadius: '8px',
+  fontSize: '16px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  fontFamily: 'var(--font-family)'
+};
+
+const listSectionStyle = {
+  backgroundColor: 'var(--background)',
+  padding: '24px',
+  borderRadius: '12px',
+  border: '1px solid var(--card-border)'
+};
+
+const listTitleStyle = {
+  fontSize: '18px',
+  fontWeight: '600',
+  color: 'var(--primary-text)',
+  margin: '0 0 20px 0'
+};
+
+const emptyStateStyle = {
+  textAlign: 'center',
+  padding: '48px 24px',
+  color: 'var(--secondary-text)'
+};
+
+const emptyTextStyle = {
+  fontSize: '16px',
+  margin: '12px 0 0 0'
+};
+
+const itemsGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gap: '16px'
+};
+
+const itemCardStyle = {
+  backgroundColor: 'var(--card-background)',
+  borderRadius: '8px',
+  padding: '16px',
+  border: '1px solid var(--card-border)',
+  position: 'relative',
+  transition: 'transform 0.2s ease'
+};
+
+const removeButtonStyle = {
+  position: 'absolute',
+  top: '8px',
+  right: '8px',
+  backgroundColor: '#EF4444',
+  color: 'white',
+  border: 'none',
+  borderRadius: '50%',
+  width: '28px',
+  height: '28px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1
+};
+
+const itemImageStyle = {
+  width: '100%',
+  height: '120px',
+  objectFit: 'cover',
+  borderRadius: '6px',
+  marginBottom: '8px'
+};
+
+const itemNameStyle = {
+  fontSize: '14px',
+  fontWeight: '500',
+  color: 'var(--primary-text)',
+  margin: '0'
+};
+
+const errorTextStyle = {
+  fontSize: '12px',
+  color: '#EF4444',
+  margin: '4px 0 0 0'
+};
+
+const spinnerStyle = {
+  width: '16px',
+  height: '16px',
+  border: '2px solid transparent',
+  borderTop: '2px solid currentColor',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
 };
 
 export default AddItems;

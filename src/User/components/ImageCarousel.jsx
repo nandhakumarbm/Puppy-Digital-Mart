@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { useGetAllAdsQuery } from "../../utils/apiSlice";
 
 function ImageCarousel() {
-    const images = [
-        "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=80",
-        "https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=1600&q=80",
-        "https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=1600&q=80",
-        "https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&w=1600&q=80",
-        "https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=1600&q=80"
-    ];
+    const { data: adsData, isLoading, error } = useGetAllAdsQuery();
+
+    // Extract image URLs from API response, filter for active image ads only
+    const images = React.useMemo(() => {
+        if (!adsData || !Array.isArray(adsData)) return [];
+
+        return adsData
+            .filter(ad => ad.isActive && ad.type === 'image' && ad.mediaUrl)
+            .map(ad => ad.mediaUrl);
+    }, [adsData]);
 
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -20,9 +24,19 @@ function ImageCarousel() {
     };
 
     useEffect(() => {
-        const slideInterval = setInterval(goToNext, 4000);
-        return () => clearInterval(slideInterval);
-    }, [currentIndex]);
+        // Only start the interval if there are images
+        if (images.length > 0) {
+            const slideInterval = setInterval(goToNext, 4000);
+            return () => clearInterval(slideInterval);
+        }
+    }, [currentIndex, images.length]);
+
+    // Reset currentIndex if it's out of bounds when images change
+    useEffect(() => {
+        if (currentIndex >= images.length && images.length > 0) {
+            setCurrentIndex(0);
+        }
+    }, [images.length, currentIndex]);
 
     const carouselContainer = {
         position: "relative",
@@ -39,8 +53,9 @@ function ImageCarousel() {
         height: "230px",
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundImage: `url(${images[currentIndex]})`,
+        backgroundImage: images.length > 0 ? `url(${images[currentIndex]})` : 'none',
         transition: "background-image 0.6s ease-in-out",
+        backgroundColor: images.length === 0 ? '#f0f0f0' : 'transparent',
     };
 
     const arrowStyle = {
@@ -79,21 +94,60 @@ function ImageCarousel() {
         transition: "background-color 0.3s ease",
     });
 
+    const loadingStyle = {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "230px",
+        color: "#666",
+        fontSize: "16px",
+    };
+
+    // Handle loading state
+    if (isLoading) {
+        return (
+            <div style={carouselContainer}>
+                <div style={loadingStyle}>Loading advertisements...</div>
+            </div>
+        );
+    }
+
+    // Handle error state
+    if (error) {
+        return (
+            <div style={carouselContainer}>
+                <div style={loadingStyle}>Error loading advertisements</div>
+            </div>
+        );
+    }
+
+    // Handle no images state
+    if (images.length === 0) {
+        return (
+            <div style={carouselContainer}>
+                <div style={loadingStyle}>No active advertisements available</div>
+            </div>
+        );
+    }
+
     return (
         <div style={carouselContainer}>
             <div style={slideStyle}></div>
-            <button style={leftArrow} onClick={goToPrevious}>‹</button>
-            <button style={rightArrow} onClick={goToNext}>›</button>
-
-            <div style={dotsWrapper}>
-                {images.map((_, index) => (
-                    <div
-                        key={index}
-                        style={dotStyle(index === currentIndex)}
-                        onClick={() => setCurrentIndex(index)}
-                    />
-                ))}
-            </div>
+            {images.length > 1 && (
+                <>
+                    <button style={leftArrow} onClick={goToPrevious}>‹</button>
+                    <button style={rightArrow} onClick={goToNext}>›</button>
+                    <div style={dotsWrapper}>
+                        {images.map((_, index) => (
+                            <div
+                                key={index}
+                                style={dotStyle(index === currentIndex)}
+                                onClick={() => setCurrentIndex(index)}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

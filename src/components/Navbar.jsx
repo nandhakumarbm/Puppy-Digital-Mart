@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 
 function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
-    const walletBalance = useSelector((state) => state.auth?.walletBalance || 0);
+    const user = useSelector((state) => state.auth);
 
     const headerStyle = {
         display: "flex",
@@ -69,6 +69,7 @@ function Navbar() {
         },
     };
 
+
     return (
         <>
             <div style={styles.navbar}>
@@ -79,11 +80,15 @@ function Navbar() {
                     </div>
                 </div>
 
-                <div style={headerStyle}>
-                    <div style={orbBadge}>
-                        ORB {walletBalance}
-                    </div>
-                </div>
+                {
+                    user?.phone != "9442828298" && (
+                        <div style={headerStyle}>
+                            <div style={orbBadge}>
+                                ORB {""}
+                            </div>
+                        </div>
+                    )
+                }
             </div>
             <SideMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
         </>

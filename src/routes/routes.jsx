@@ -26,7 +26,7 @@ export const privateRoutes = [
 
 
 export const adminRoutes = [
-  { path: "/admin/users", element: <UserLists /> },
-  { path: "/admin/redeemreq", element: <RedemptionReq /> },
-  { path: "/admin/addItems", element: <AddItems /> }
+  { path: "/users", element: <UserLists /> },
+  { path: "/redeemreq", element: <RedemptionReq /> },
+  { path: "/addItems", element: <AddItems /> }
 ]   

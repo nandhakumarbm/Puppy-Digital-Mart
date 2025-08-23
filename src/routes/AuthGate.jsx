@@ -5,4 +5,4 @@ function AuthGate({ authed, unauthed }) {
   return ok ? authed : unauthed;
 }
 
-export default AuthGate;
+export default AuthGate;  

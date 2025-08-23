@@ -1,18 +1,26 @@
 import React, { useState, useMemo } from "react";
 import { Search, Phone, Wallet } from "lucide-react";
+import { useGetAllUsersQuery } from "../../utils/apiSlice";
 
 function UserLists() {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
     const [sortOrder, setSortOrder] = useState("asc");
 
-    const users = [
-        { id: 1, name: "Arun Kumar", phone: "9876543210", wallet: 1200 },
-        { id: 2, name: "Priya Sharma", phone: "9876501234", wallet: 800 },
-        { id: 3, name: "Ravi Raj", phone: "9123456780", wallet: 1500 },
-        { id: 4, name: "Sneha Patel", phone: "9988776655", wallet: 600 },
-        { id: 5, name: "Karthik", phone: "9090909090", wallet: 2200 },
-    ];
+    // Fetch users from API
+    const { data: usersData, error, isLoading } = useGetAllUsersQuery();
+
+    // Transform API response to match component structure
+    const users = useMemo(() => {
+        if (!usersData || !Array.isArray(usersData)) return [];
+
+        return usersData.map(user => ({
+            id: user._id,
+            name: user.username,
+            phone: user.phone,
+            wallet: user.walletId?.walletBalance || 0
+        }));
+    }, [usersData]);
 
     const filteredAndSortedUsers = useMemo(() => {
         let filtered = users.filter((user) =>
@@ -35,7 +43,7 @@ function UserLists() {
                 return aValue < bValue ? 1 : -1;
             }
         });
-    }, [searchTerm, sortBy, sortOrder]);
+    }, [users, searchTerm, sortBy, sortOrder]);
 
     const handleSort = (field) => {
         if (sortBy === field) {
@@ -46,9 +54,43 @@ function UserLists() {
         }
     };
 
+    // Loading state
+    if (isLoading) {
+        return (
+            <div style={containerStyle}>
+                <div style={maxWidthStyle}>
+                    <div style={loadingStyle}>
+                        <p>Loading users...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div style={containerStyle}>
+                <div style={maxWidthStyle}>
+                    <div style={errorStyle}>
+                        <p style={errorTitleStyle}>Error loading users</p>
+                        <p style={errorSubtitleStyle}>
+                            {error?.data?.message || error?.message || 'Failed to fetch users'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div style={containerStyle}>
             <div style={maxWidthStyle}>
+                {/* Header */}
+                <div style={headerStyle}>
+                    <h1 style={titleStyle}>User Management</h1>
+                    <p style={subtitleStyle}>Manage and view all registered users</p>
+                </div>
 
                 {/* Search */}
                 <div style={filterSectionStyle}>
@@ -114,10 +156,10 @@ function UserLists() {
                                             <td style={tdStyle}>
                                                 <div style={userCellStyle}>
                                                     <div style={avatarStyle}>
-                                                        {user.name.charAt(0)}
+                                                        {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                                                     </div>
                                                     <div>
-                                                        <p style={userNameStyle}>{user.name}</p>
+                                                        <p style={userNameStyle}>{user.name || 'Unknown User'}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -140,7 +182,9 @@ function UserLists() {
                                         <td colSpan="3" style={emptyStateStyle}>
                                             <div style={emptyContentStyle}>
                                                 <p style={emptyTitleStyle}>No users found</p>
-                                                <p style={emptySubtitleStyle}>Try adjusting your search criteria</p>
+                                                <p style={emptySubtitleStyle}>
+                                                    {searchTerm ? 'Try adjusting your search criteria' : 'No users registered yet'}
+                                                </p>
                                             </div>
                                         </td>
                                     </tr>
@@ -169,6 +213,23 @@ const containerStyle = {
 const maxWidthStyle = {
     maxWidth: '1200px',
     margin: '0 auto'
+};
+
+const headerStyle = {
+    marginBottom: '24px'
+};
+
+const titleStyle = {
+    fontSize: '28px',
+    fontWeight: '700',
+    color: 'var(--primary-text)',
+    margin: '0 0 8px 0'
+};
+
+const subtitleStyle = {
+    fontSize: '16px',
+    color: 'var(--secondary-text)',
+    margin: '0'
 };
 
 const filterSectionStyle = {
@@ -345,6 +406,37 @@ const footerStyle = {
     marginTop: '24px',
     fontSize: '14px',
     color: 'var(--secondary-text)'
+};
+
+const loadingStyle = {
+    backgroundColor: 'var(--card-background)',
+    padding: '48px',
+    borderRadius: '12px',
+    border: '1px solid var(--card-border)',
+    textAlign: 'center',
+    color: 'var(--secondary-text)',
+    fontSize: '16px'
+};
+
+const errorStyle = {
+    backgroundColor: 'var(--card-background)',
+    padding: '48px',
+    borderRadius: '12px',
+    border: '1px solid var(--card-border)',
+    textAlign: 'center'
+};
+
+const errorTitleStyle = {
+    color: 'var(--primary-text)',
+    fontWeight: '500',
+    margin: '0 0 8px 0',
+    fontSize: '18px'
+};
+
+const errorSubtitleStyle = {
+    color: 'var(--secondary-text)',
+    fontSize: '14px',
+    margin: '0'
 };
 
 export default UserLists;
