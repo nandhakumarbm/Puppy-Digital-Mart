@@ -9,9 +9,6 @@ import SelectAction from "../components/SelectAction";
 import Disclaimer from "../components/Disclaimer";
 import RedeemResultModal from "../components/RedeemResultModal";
 import Modal from "../components/Modal";
-import { useGetAuthProfileQuery } from "../../utils/apiSlice";
-import { useDispatch } from "react-redux";  
-import { setAuth } from "../../Slices/authSlice";
 
 
 function Home() {
@@ -22,18 +19,6 @@ function Home() {
     const [modalType, setModalType] = useState("");
     const [showResultModal, setShowResultModal] = useState(false);
     const [qrData, setQrData] = useState("");
-    const dispatch = useDispatch();
-
-    const { data: profile, error, isLoading } = useGetAuthProfileQuery();
-
-    useEffect(() => {
-        if (profile) {
-            dispatch(setAuth(profile));
-        }
-        if (error) {
-            console.error("Failed to fetch profile:", error);
-        }
-    }, [profile, error]);
 
     const closeModal = () => setModalType("");
     const closeResultModal = () => setShowResultModal(false);
