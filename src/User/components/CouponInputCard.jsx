@@ -17,7 +17,7 @@ function CouponInputCard({
             boxShadow: "0px 4px 20px rgba(0,0,0,0.1)",
             border: `1px solid var(--card-border)`,
             maxWidth: "350px",
-            margin: "0 auto",
+            margin: "0 auto",   
         },
         icon: { fontSize: "32px", color: "var(--accent-primary)" },
         title: { fontWeight: "bold", margin: "10px 0", fontSize: "18px", color: "var(--primary-text)" },

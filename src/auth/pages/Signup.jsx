@@ -3,13 +3,22 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 import { useState } from "react";
+import { Alert, Snackbar } from "@mui/material";
 import { useRegisterUserMutation } from "../../utils/apiSlice";
 
 function Signup() {
     const nav = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
+    const [alert, setAlert] = useState({ open: false, message: "", severity: "info" });
+
+    const closeAlert = () => setAlert({ ...alert, open: false });
 
     const [registerUser, { isLoading }] = useRegisterUserMutation();
+
+    const showAlert = (message, severity = "info", duration = 4000) => {
+        setAlert({ open: true, message, severity });
+        setTimeout(() => closeAlert(), duration);
+    };
 
     const validationSchema = Yup.object().shape({
         phone: Yup.string()
@@ -30,15 +39,27 @@ function Signup() {
     const onSubmit = async (data) => {
         try {
             const res = await registerUser(data);
-            console.log(res.data);
+            console.log(res);
 
+            // Check for API errors
+            if (res?.error) {
+                const errorMessage = res.error?.data?.message || "User already exists, please login";
+                showAlert(errorMessage, "error");
+                return;
+            }
+
+            // Check for successful registration
             if (res?.data?.message && res?.data?.userId) {
-                nav("/", { replace: true });
-                window.location.reload();
+                showAlert("Registration successful! Redirecting...", "success");
+                setTimeout(() => {
+                    nav("/", { replace: true });
+                    window.location.reload();
+                }, 1500);
             }
         } catch (err) {
-            console.error("Registration failed:", err);
-            alert(err?.data?.message || "Registration failed, please try again");
+            console.error("Registration error:", err);
+            const errorMessage = err?.data?.message || err?.message || "Registration failed, please try again";
+            showAlert(errorMessage, "error");
         }
     };
 
@@ -170,6 +191,18 @@ function Signup() {
                     Already have an account? <Link to="/" style={linkStyle}>Login</Link>
                 </p>
             </div>
+
+            {/* Add the Snackbar component that was missing */}
+            <Snackbar
+                open={alert.open}
+                autoHideDuration={4000}
+                onClose={closeAlert}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={closeAlert} severity={alert.severity} sx={{ width: '100%' }}>
+                    {alert.message}
+                </Alert>
+            </Snackbar>
         </div>
     );
 }
