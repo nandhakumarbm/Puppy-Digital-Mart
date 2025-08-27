@@ -1,15 +1,19 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Clock, CheckCircle, User, Gift, Calendar } from 'lucide-react';
-import { useGetAdminRedemptionsQuery } from '../../utils/apiSlice';
+import { Search, Clock, CheckCircle, User, Gift, Calendar, X, AlertCircle } from 'lucide-react';
+import { useGetAdminRedemptionsQuery, useApproveRedemptionMutation } from '../../utils/apiSlice';
 
 const RedemptionReq = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [sortBy, setSortBy] = useState("requestDate");
     const [sortOrder, setSortOrder] = useState("desc");
+    const [alert, setAlert] = useState(null); // For custom alert
 
     // Fetch redemption requests from API
-    const { data: redemptionData, error, isLoading } = useGetAdminRedemptionsQuery();
+    const { data: redemptionData, error, isLoading, refetch } = useGetAdminRedemptionsQuery();
+
+    // Approve redemption mutation
+    const [approveRedemption, { isLoading: isApproving }] = useApproveRedemptionMutation();
 
     // Transform API response to match component structure
     const redemptionRequests = useMemo(() => {
@@ -62,10 +66,36 @@ const RedemptionReq = () => {
         });
     }, [redemptionRequests, searchTerm, statusFilter, sortBy, sortOrder]);
 
-    const handleStatusUpdate = (requestId, newStatus) => {
-        alert(`Request #${requestId} status updated to: ${newStatus}`);
-        // TODO: Implement actual API call to update status
-        // You would typically call an update mutation here
+    const handleApproveRedemption = async (requestId, userName) => {
+        try {
+            const result = await approveRedemption({
+                redemptionId: requestId
+            }).unwrap();
+
+            // Success alert
+            setAlert({
+                type: 'success',
+                title: 'Success!',
+                message: `Redemption request for ${userName} has been approved successfully.`
+            });
+
+            // Refetch the data to update the UI
+            refetch();
+        } catch (error) {
+            // Error alert
+            const errorMessage = error?.data?.message || error?.message || 'Failed to approve redemption request';
+            setAlert({
+                type: 'error',
+                title: 'Error',
+                message: errorMessage
+            });
+            console.error('Error approving redemption:', error);
+        }
+    };
+
+    // Function to close alert
+    const closeAlert = () => {
+        setAlert(null);
     };
 
     const handleSort = (field) => {
@@ -81,13 +111,11 @@ const RedemptionReq = () => {
         const styles = {
             pending: { backgroundColor: '#FFF3CD', color: '#856404', border: '1px solid #FFEAA7' },
             approved: { backgroundColor: '#D4EDDA', color: '#155724', border: '1px solid #C3E6CB' },
-            rejected: { backgroundColor: '#F8D7DA', color: '#721C24', border: '1px solid #F5C6CB' }
         };
 
         const icons = {
             pending: <Clock size={12} style={{ marginRight: '4px' }} />,
             approved: <CheckCircle size={12} style={{ marginRight: '4px' }} />,
-            rejected: <User size={12} style={{ marginRight: '4px' }} />
         };
 
         return (
@@ -143,11 +171,37 @@ const RedemptionReq = () => {
 
     const pendingCount = redemptionRequests.filter(req => req.status === 'pending').length;
     const approvedCount = redemptionRequests.filter(req => req.status === 'approved').length;
-    const rejectedCount = redemptionRequests.filter(req => req.status === 'rejected').length;
 
     return (
         <div style={containerStyle}>
             <div style={maxWidthStyle}>
+                {/* Custom Alert */}
+                {alert && (
+                    <div style={alertOverlayStyle}>
+                        <div style={alertModalStyle}>
+                            <div style={alertHeaderStyle}>
+                                <div style={alertTitleContainerStyle}>
+                                    {alert.type === 'success' ? (
+                                        <CheckCircle style={alertIconSuccessStyle} size={20} />
+                                    ) : (
+                                        <AlertCircle style={alertIconErrorStyle} size={20} />
+                                    )}
+                                    <h3 style={alertTitleStyle}>{alert.title}</h3>
+                                </div>
+                                <button onClick={closeAlert} style={alertCloseButtonStyle}>
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <p style={alertMessageStyle}>{alert.message}</p>
+                            <div style={alertButtonContainerStyle}>
+                                <button onClick={closeAlert} style={alertOkButtonStyle}>
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div style={headerSectionStyle}>
                     <h1 style={titleStyle}>Redemption Requests</h1>
@@ -218,7 +272,6 @@ const RedemptionReq = () => {
                                 <option value="all">All Status</option>
                                 <option value="pending">Pending</option>
                                 <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
                             </select>
 
                             <select
@@ -328,20 +381,18 @@ const RedemptionReq = () => {
                                             <td style={tdStyle}>
                                                 <div style={actionsCellStyle}>
                                                     {request.status === 'pending' ? (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleStatusUpdate(request.id, 'approved')}
-                                                                style={{ ...actionButtonStyle, backgroundColor: '#16a34a', marginRight: '8px' }}
-                                                            >
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleStatusUpdate(request.id, 'rejected')}
-                                                                style={{ ...actionButtonStyle, backgroundColor: '#dc2626' }}
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                        </>
+                                                        <button
+                                                            onClick={() => handleApproveRedemption(request.id, request.userName)}
+                                                            disabled={isApproving}
+                                                            style={{
+                                                                ...actionButtonStyle,
+                                                                backgroundColor: isApproving ? '#94a3b8' : '#16a34a',
+                                                                cursor: isApproving ? 'not-allowed' : 'pointer',
+                                                                opacity: isApproving ? 0.7 : 1
+                                                            }}
+                                                        >
+                                                            {isApproving ? 'Approving...' : 'Approve'}
+                                                        </button>
                                                     ) : (
                                                         <span style={approvedLabelStyle}>
                                                             {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
@@ -771,6 +822,94 @@ const footerStyle = {
     color: 'var(--secondary-text)',
     flexWrap: 'wrap',
     gap: '16px'
+};
+
+// Custom Alert Styles
+const alertOverlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: '20px'
+};
+
+const alertModalStyle = {
+    backgroundColor: 'var(--card-background)',
+    borderRadius: '12px',
+    padding: '24px',
+    maxWidth: '400px',
+    width: '100%',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    border: '1px solid var(--card-border)'
+};
+
+const alertHeaderStyle = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: '16px'
+};
+
+const alertTitleContainerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+};
+
+const alertTitleStyle = {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: '600',
+    color: 'var(--primary-text)'
+};
+
+const alertIconSuccessStyle = {
+    color: '#16a34a'
+};
+
+const alertIconErrorStyle = {
+    color: '#dc2626'
+};
+
+const alertCloseButtonStyle = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--secondary-text)',
+    padding: '4px',
+    borderRadius: '4px',
+    transition: 'all 0.2s ease'
+};
+
+const alertMessageStyle = {
+    margin: '0 0 20px 0',
+    color: 'var(--secondary-text)',
+    fontSize: '14px',
+    lineHeight: '1.5'
+};
+
+const alertButtonContainerStyle = {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '12px'
+};
+
+const alertOkButtonStyle = {
+    backgroundColor: 'var(--accent-primary)',
+    color: 'var(--button-text)',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 16px',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
 };
 
 export default RedemptionReq;

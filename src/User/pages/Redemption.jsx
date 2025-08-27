@@ -1,35 +1,56 @@
 import React, { useState } from "react";
 import { Clock, AlertCircle, Gift, Calendar, CheckCircle } from "lucide-react";
+import { useGetAllRedemptionsQuery } from "../../utils/apiSlice";
 
 const Redemption = () => {
-  // Mock data for redeemed rewards - in real app, this would come from props/context/API
-  const [redemptions] = useState([
-    {
-      id: 1,
-      title: "Soap",
-      requiredOrbits: 500,
-      color: "#FF8A65",
-      image: "https://5.imimg.com/data5/SELLER/Default/2022/11/FC/TD/HH/142168408/hamam-soap-500x500.jpg",
-      type: "discount",
-      redeemedAt: "2024-08-10T14:30:00Z",
-      status: "not_approved",
-      redemptionCode: "RDM001"
-    },
-    {
-      id: 2,
-      title: "Tooth brush",
-      requiredOrbits: 800,
-      color: "#EF5350",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiL88k66TSLG1Qt5Ob161uLpF1Y_Opyz7RoyP8OUN8HZ_dNMH3XdwX_jPoebmU20Lp5S4&usqp=CAU",
-      type: "offer",
-      redeemedAt: "2024-08-09T10:15:00Z",
-      status: "not_approved",
-      redemptionCode: "RDM002"
-    },
-  ]);
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  // Fetch redemptions from API
+  const { data: redemptionsData, isLoading, error } = useGetAllRedemptionsQuery();
+
+  // Function to convert Google Drive URL if needed
+  const convertGoogleDriveUrl = (url) => {
+    if (!url) return '';
+
+    const driveMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (driveMatch) {
+      const fileId = driveMatch[1];
+      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+
+    return url;
+  };
+
+  // Transform API data to match component structure
+  const redemptions = redemptionsData ? redemptionsData.map(item => ({
+    id: item._id,
+    title: item.offerId.title,
+    subtitle: item.offerId.description,
+    requiredOrbits: item.amount,
+    color: "#FF8A65", // Default color
+    image: convertGoogleDriveUrl(item.offerId.imageUrl),
+    type: "discount",
+    redeemedAt: item.createdAt,
+    status: item.status, // approved, pending, rejected, etc.
+    redemptionCode: `RDM${item._id.slice(-6).toUpperCase()}`, // Generate code from ID
+    userId: item.userId._id,
+    username: item.userId.username
+  })) : [];
+
+  // Filter redemptions based on active filter
+  const filteredRedemptions = redemptions.filter(redemption => {
+    switch (activeFilter) {
+      case "pending":
+        return redemption.status === "pending" || redemption.status === "not_approved";
+      case "approved":
+        return redemption.status === "approved";
+      default:
+        return true; // "all" - show everything
+    }
+  });
 
   const getStatusConfig = (status) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "approved":
         return {
           label: "Approved",
@@ -37,9 +58,10 @@ const Redemption = () => {
           bgColor: "#E8F5E8",
           icon: CheckCircle
         };
+      case "pending":
       case "not_approved":
         return {
-          label: "Not Approved",
+          label: "Pending",
           color: "#FF9800",
           bgColor: "#FFF3E0",
           icon: Clock
@@ -72,6 +94,10 @@ const Redemption = () => {
     });
   };
 
+  // Count for each filter
+  const pendingCount = redemptions.filter(r => r.status === "pending" || r.status === "not_approved").length;
+  const approvedCount = redemptions.filter(r => r.status === "approved").length;
+
   // Styles
   const containerStyle = {
     minHeight: "100vh",
@@ -94,6 +120,25 @@ const Redemption = () => {
     fontSize: "14px",
     color: "#666",
     margin: 0,
+  };
+
+  const loadingStyle = {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "300px",
+    fontSize: "16px",
+    color: "#666",
+  };
+
+  const errorStyle = {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "300px",
+    fontSize: "16px",
+    color: "#f44336",
+    textAlign: "center",
   };
 
   const emptyState = {
@@ -262,6 +307,34 @@ const Redemption = () => {
     transition: "all 0.2s ease",
   });
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div style={containerStyle}>
+        <div style={headerStyle}>
+          <h1 style={headerTitle}>My Redemptions</h1>
+          <p style={headerSubtitle}>Track your redeemed rewards and their approval status</p>
+        </div>
+        <div style={loadingStyle}>Loading redemptions...</div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div style={containerStyle}>
+        <div style={headerStyle}>
+          <h1 style={headerTitle}>My Redemptions</h1>
+          <p style={headerSubtitle}>Track your redeemed rewards and their approval status</p>
+        </div>
+        <div style={errorStyle}>
+          Failed to load redemptions. Please try again later.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={containerStyle}>
       {/* Header */}
@@ -272,24 +345,43 @@ const Redemption = () => {
 
       {/* Filter Tabs */}
       <div style={filterTabs}>
-        <button style={filterTab(true)}>All</button>
-        <button style={filterTab(false)}>Pending</button>
-        <button style={filterTab(false)}>Approved</button>
+        <button
+          style={filterTab(activeFilter === "all")}
+          onClick={() => setActiveFilter("all")}
+        >
+          All ({redemptions.length})
+        </button>
+        <button
+          style={filterTab(activeFilter === "pending")}
+          onClick={() => setActiveFilter("pending")}
+        >
+          Pending ({pendingCount})
+        </button>
+        <button
+          style={filterTab(activeFilter === "approved")}
+          onClick={() => setActiveFilter("approved")}
+        >
+          Approved ({approvedCount})
+        </button>
       </div>
 
       {/* Redemptions List */}
-      {redemptions.length === 0 ? (
+      {filteredRedemptions.length === 0 ? (
         <div style={emptyState}>
           <div style={emptyIcon}>🎁</div>
-          <div style={emptyTitle}>No Redemptions Yet</div>
+          <div style={emptyTitle}>
+            {activeFilter === "all" ? "No Redemptions Yet" : `No ${activeFilter} Redemptions`}
+          </div>
           <div style={emptyDescription}>
-            Start redeeming rewards from your wallet to see them here.<br />
-            Your redeemed rewards will be reviewed and approved.
+            {activeFilter === "all"
+              ? "Start redeeming rewards from your wallet to see them here.\nYour redeemed rewards will be reviewed and approved."
+              : `No ${activeFilter} redemptions found. Check other tabs or redeem more rewards.`
+            }
           </div>
         </div>
       ) : (
         <div>
-          {redemptions.map((redemption) => {
+          {filteredRedemptions.map((redemption) => {
             const statusConfig = getStatusConfig(redemption.status);
             const StatusIcon = statusConfig.icon;
 
@@ -303,10 +395,14 @@ const Redemption = () => {
                         src={redemption.image}
                         alt={redemption.title}
                         style={rewardImage}
+                        onError={(e) => {
+                          e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
+                        }}
                       />
                     </div>
                     <div style={rewardDetails}>
                       <h3 style={rewardTitle}>{redemption.title}</h3>
+                      <p style={rewardSubtitle}>{redemption.subtitle}</p>
                       <div style={rewardMeta}>
                         <Calendar size={12} />
                         <span>Redeemed on {formatDate(redemption.redeemedAt)}</span>

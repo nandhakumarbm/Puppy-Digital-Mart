@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useGetAllAdsQuery } from "../../utils/apiSlice";
+import { useGetCarouselPosterQuery } from "../../utils/apiSlice";
+
 
 function ImageCarousel() {
-    const { data: adsData, isLoading, error } = useGetAllAdsQuery();
+    const { data: adsData, isLoading, error } = useGetCarouselPosterQuery();
 
     // Extract image URLs from API response, filter for active image ads only
     const images = React.useMemo(() => {
@@ -12,6 +13,7 @@ function ImageCarousel() {
             .filter(ad => ad.isActive && ad.type === 'image' && ad.mediaUrl)
             .map(ad => ad.mediaUrl);
     }, [adsData]);
+
 
     const [currentIndex, setCurrentIndex] = useState(0);
 

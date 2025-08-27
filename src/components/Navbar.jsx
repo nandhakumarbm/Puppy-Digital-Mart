@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import Logo from "../assets/PuppyLogo.jpg";
 import SideMenu from "./SideMenu";
 import { useSelector } from "react-redux";
+import { getUser } from "../utils/auth";
 
 function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const user = useSelector((state) => state.auth);
+
+    const role = getUser()?.role;
 
     const headerStyle = {
         display: "flex",
@@ -69,7 +72,6 @@ function Navbar() {
         },
     };
 
-
     return (
         <>
             <div style={styles.navbar}>
@@ -81,10 +83,10 @@ function Navbar() {
                 </div>
 
                 {
-                    user?.phone != "9442828298" && (
+                    role != "admin" && (
                         <div style={headerStyle}>
                             <div style={orbBadge}>
-                                ORB {""}
+                                ORB {user.wallet.walletBalance}
                             </div>
                         </div>
                     )

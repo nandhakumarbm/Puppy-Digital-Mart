@@ -8,7 +8,10 @@ import Redemption from "../User/pages/Redemption";
 
 import UserLists from "../Admin/pages/UserLists";
 import RedemptionReq from "../Admin/pages/RedemptionReq";
-import AddItems from "../Admin/pages/AddItems";
+import ManageAds from "../Admin/pages/ManageAds";
+import ProfileCard from "../Admin/pages/Profile";
+import ManageOffers from "../Admin/pages/ManageOffers";
+
 
 
 export const publicRoutes = [
@@ -17,16 +20,18 @@ export const publicRoutes = [
 ];
 
 export const privateRoutes = [
-  { path: "/", element: <Home /> },
-  { path: "/profile", element: <Profile /> },
-  { path: "/wallet", element: <Wallet /> },
-  { path: "/redeem", element: <Redemption /> },
+  { path: "/user/", element: <Home /> },
+  { path: "/user/profile", element: <Profile /> },
+  { path: "/user/wallet", element: <Wallet /> },
+  { path: "/user/redeem", element: <Redemption /> },
 
 ];
 
 
 export const adminRoutes = [
-  { path: "/users", element: <UserLists /> },
-  { path: "/redeemreq", element: <RedemptionReq /> },
-  { path: "/addItems", element: <AddItems /> }
+  { path: "/admin/", element: <UserLists /> },
+  { path: "/admin/redeemreq", element: <RedemptionReq /> },
+  { path: "/admin/manageAds", element: <ManageAds /> },
+  { path: "/admin/profile", element: <ProfileCard /> },
+  { path: "/admin/manageOffers", element: <ManageOffers /> }
 ]   

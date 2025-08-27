@@ -6,6 +6,7 @@ function CouponInputCard({
     handleApplyCoupon,
     couponError,
     couponSuccess,
+    isLoading = false, // New prop for loading state
 }) {
     const styles = {
         card: {
@@ -33,6 +34,7 @@ function CouponInputCard({
             marginBottom: "12px",
             transition: "border-color 0.2s ease",
             fontFamily: "monospace",
+            opacity: isLoading ? 0.6 : 1,
         },
         button: (enabled) => ({
             width: "100%",
@@ -41,19 +43,41 @@ function CouponInputCard({
             border: "none",
             fontWeight: "bold",
             fontSize: "16px",
-            cursor: enabled ? "pointer" : "not-allowed",
-            background: enabled ? "var(--accent-primary)" : "var(--accent-secondary)",
+            cursor: enabled && !isLoading ? "pointer" : "not-allowed",
+            background: enabled && !isLoading ? "var(--accent-primary)" : "var(--accent-secondary)",
             color: "var(--button-text)",
             transition: "all 0.2s ease",
-            opacity: enabled ? 1 : 0.6,
+            opacity: enabled && !isLoading ? 1 : 0.6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
         }),
         errorMsg: { marginTop: "8px", fontSize: "13px", color: "#ff4c4c" },
         successMsg: { marginTop: "8px", fontSize: "13px", color: "green" },
         note: { marginTop: "12px", fontSize: "12px", color: "var(--secondary-text)" },
+        spinner: {
+            width: "16px",
+            height: "16px",
+            border: "2px solid transparent",
+            borderTop: "2px solid currentColor",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+        },
     };
+
+    const isButtonEnabled = couponInput.trim().length >= 1 && !isLoading;
 
     return (
         <div style={styles.card}>
+            <style>
+                {`
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `}
+            </style>
             <div style={styles.icon}>🎟️</div>
             <div style={styles.title}>Enter Coupon</div>
             <div style={styles.subtitle}>Enter your coupon code below</div>
@@ -64,18 +88,30 @@ function CouponInputCard({
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     style={styles.input}
+                    disabled={isLoading}
                 />
                 <button
                     type="submit"
-                    style={styles.button(couponInput.trim().length >= 1)}
-                    disabled={!couponInput.trim()}
+                    style={styles.button(isButtonEnabled)}
+                    disabled={!isButtonEnabled}
                 >
-                    🎟️ Apply Coupon
+                    {isLoading ? (
+                        <>
+                            <div style={styles.spinner}></div>
+                            Applying...
+                        </>
+                    ) : (
+                        <>
+                            🎟️ Apply Coupon
+                        </>
+                    )}
                 </button>
             </form>
             {couponError && <div style={styles.errorMsg}>{couponError}</div>}
             {couponSuccess && <div style={styles.successMsg}>{couponSuccess}</div>}
-            <div style={styles.note}>Coupon codes are case-insensitive</div>
+            <div style={styles.note}>
+                {isLoading ? "Processing coupon..." : "Coupon codes are case-insensitive"}
+            </div>
         </div>
     );
 }

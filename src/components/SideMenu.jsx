@@ -167,16 +167,18 @@ function SideMenu({ isOpen, onClose }) {
     };
 
     const menuItems = [
-        { path: "/", icon: "🏠", label: "Home" },
-        { path: "/profile", icon: "👤", label: "Profile" },
-        { path: "/wallet", icon: "💰", label: "Wallet" },
-        { path: "/redeem", icon: "🎁", label: "Redemption" },
+        { path: "/user/", icon: "🏠", label: "Home" },
+        { path: "/user/profile", icon: "👤", label: "Profile" },
+        { path: "/user/wallet", icon: "💰", label: "Wallet" },
+        { path: "/user/redeem", icon: "🎁", label: "Redemption" },
     ];
 
     const adminMenuItems = [
-        { path: "/users", icon: "👥", label: "Users" },
-        { path: "/redeemreq", icon: "📋", label: "Redemption Requests" },
-        { path: "/addItems", icon: "➕", label: "Add Items" }
+        { path: "/admin/", icon: "👥", label: "Users" },
+        { path: "/admin/redeemreq", icon: "📋", label: "Redemption Requests" },
+        { path: "/admin/manageAds", icon: "➕", label: "Manage Ads" },
+        { path: "/admin/manageOffers", icon: "🛍️", label: "Manage Offers" },
+        { path: "/admin/profile", icon: "👤", label: "Profile" }
     ];
 
     const itemsToShow = user?.role === "admin" ? adminMenuItems : menuItems;

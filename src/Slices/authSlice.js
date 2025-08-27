@@ -10,7 +10,7 @@ const initialState = {
     userId: null,
     walletBalance: 0,
     walletHistory: [],
-    lastUpdated: null,  
+    lastUpdated: null,
   },
 };
 
@@ -30,7 +30,7 @@ const authSlice = createSlice({
         walletBalance: walletId?.walletBalance ?? 0,
         walletHistory: walletId?.walletHistory ?? [],
         lastUpdated: walletId?.lastUpdated ?? null,
-      };    
+      };
     },
     clearAuth: (state) => {
       state.authId = null;
@@ -46,6 +46,7 @@ const authSlice = createSlice({
       };
     },
     updateWalletBalance: (state, action) => {
+      console.log("Updated: ", action.payload);
       state.wallet.walletBalance = action.payload;
     },
     addWalletHistory: (state, action) => {
@@ -55,6 +56,6 @@ const authSlice = createSlice({
 });
 
 export const { setAuth, clearAuth, updateWalletBalance, addWalletHistory } =
-  authSlice.actions;    
+  authSlice.actions;
 
 export default authSlice.reducer;

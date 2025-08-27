@@ -52,9 +52,10 @@ export const apiSlice = createApi({
       query: () => "/admin/redemptions",
     }),
     approveRedemption: builder.mutation({
-      query: (id) => ({
-        url: `/admin/redemptions/${id}/approve`,
+      query: (redemptionId) => ({
+        url: `/admin/redemptions/approve`,
         method: "POST",
+        body: redemptionId,
       }),
     }),
 
@@ -81,6 +82,13 @@ export const apiSlice = createApi({
     getAllOffers: builder.query({
       query: () => "/offers/offers",
     }),
+    deleteOffer: builder.mutation({
+      query: (offerId) => ({
+        url: "/offers/offers",
+        method: "DELETE",
+        body: offerId,
+      }),
+    }),
 
     // ===== COUPON =====
     generateCoupon: builder.mutation({
@@ -97,6 +105,24 @@ export const apiSlice = createApi({
         body: data,
       }),
     }),
+    redeemCoupon: builder.mutation({
+      query: (data) => ({
+        url: "/coupon/redeem",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    validateCoupon: builder.mutation({
+      query: (data) => ({
+        url: "/coupon/validity",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    getCarouselPoster: builder.query({
+      query: () => "/ad/carousel-poster",
+    }),
 
     // ===== ADS =====
     createAd: builder.mutation({
@@ -108,6 +134,16 @@ export const apiSlice = createApi({
     }),
     getAllAds: builder.query({
       query: () => "/ad/ad",
+    }),
+    deleteAd: builder.mutation({
+      query: (adId) => ({
+        url: "/ad/ad",
+        method: "DELETE",
+        body: adId,
+      }),
+    }),
+    getAddForRedeem: builder.query({
+      query: () => "/ad/ad-for-redeem",
     }),
   }),
 });
@@ -135,12 +171,18 @@ export const {
   // Offers
   useCreateOfferMutation,
   useGetAllOffersQuery,
+  useDeleteOfferMutation,
 
   // Coupon
   useGenerateCouponMutation,
   useRedeemCouponMutation,
+  useValidateCouponMutation,
 
   // Ads
   useCreateAdMutation,
   useGetAllAdsQuery,
+  useDeleteAdMutation,
+  useGetAddForRedeemQuery,
+
+  useGetCarouselPosterQuery,
 } = apiSlice;

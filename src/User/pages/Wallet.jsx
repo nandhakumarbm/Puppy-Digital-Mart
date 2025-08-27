@@ -1,82 +1,184 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Lock, Check, Gift } from "lucide-react";
 import { useSelector } from "react-redux";
-
+import { useGetAllOffersQuery, useRedeemOfferMutation } from "../../utils/apiSlice";
+import { useDispatch } from "react-redux";
+import { updateWalletBalance } from "../../Slices/authSlice";
+import { toast } from "react-toastify";
+import { Alert, AlertTitle, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
 const WalletPage = () => {
     const userAuth = useSelector((state) => state.auth.wallet);
+    const dispatch = useDispatch();
+
     const { walletBalance } = userAuth || {};
 
-    const [user] = useState({
+    // Fetch offers from API
+    const { data: offersData, isLoading, error } = useGetAllOffersQuery();
+
+    // Redeem offer mutation
+    const [redeemOffer, { isLoading: isRedeeming }] = useRedeemOfferMutation();
+
+    const [user, setUser] = useState({
         balance: walletBalance,
     });
 
+    // State for MUI Alert Dialog
+    const [alertDialog, setAlertDialog] = useState({
+        open: false,
+        type: 'success', // 'success', 'error', 'warning'
+        title: '',
+        message: '',
+    });
 
-    const rewards = [
-        {
-            id: 1,
-            title: "Soap",
-            subtitle: "On orders above ₹500",
-            requiredOrbits: 500,
-            color: "#FF8A65",
-            image: "https://5.imimg.com/data5/SELLER/Default/2022/11/FC/TD/HH/142168408/hamam-soap-500x500.jpg",
+    // Update local state when Redux state changes
+    useEffect(() => {
+        setUser(prevUser => ({
+            ...prevUser,
+            balance: walletBalance
+        }));
+    }, [walletBalance]);
+
+    // Close alert dialog
+    const handleCloseAlert = () => {
+        setAlertDialog({ ...alertDialog, open: false });
+    };
+
+    // Show alert dialog
+    const showAlert = (type, title, message) => {
+        setAlertDialog({
+            open: true,
+            type,
+            title,
+            message,
+        });
+    };
+
+    // Function to extract Google Drive file ID and convert to direct link
+    const convertGoogleDriveUrl = (url) => {
+        if (!url) return '';
+
+        // Check if it's a Google Drive share link
+        const driveMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (driveMatch) {
+            const fileId = driveMatch[1];
+            return `https://drive.google.com/uc?export=view&id=${fileId}`;
+        }
+
+        // Return original URL if not a Google Drive link
+        return url;
+    };
+
+    // Transform API data to match the expected format and filter active offers
+    const rewards = offersData ? offersData
+        .filter(offer => offer.isActive) // Only show active offers
+        .map(offer => ({
+            id: offer._id,
+            title: offer.title,
+            subtitle: offer.description,
+            requiredOrbits: offer.orbitCost,
+            color: "#FF8A65", // Default color, you can make this dynamic if needed
+            image: convertGoogleDriveUrl(offer.imageUrl),
             type: "discount"
-        },
-        {
-            id: 2,
-            title: "Tooth brush",
-            subtitle: "On selected items",
-            requiredOrbits: 800,
-            color: "#EF5350",
-            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiL88k66TSLG1Qt5Ob161uLpF1Y_Opyz7RoyP8OUN8HZ_dNMH3XdwX_jPoebmU20Lp5S4&usqp=CAU",
-            type: "offer"
-        },
-        {
-            id: 3,
-            title: "Blutooth Speaker",
-            subtitle: "Up to ₹200",
-            requiredOrbits: 1000,
-            color: "#26A69A",
-            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTkzm330_QXVLpQJnT6jKW3ixSYYI9Vka9t6Q&s",
-            type: "cashback"
-        },
-        {
-            id: 4,
-            title: "Paste",
-            subtitle: "Surprise gift awaits!",
-            requiredOrbits: 1500,
-            color: "#7E57C2",
-            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQv06DseW8dCGPtlgwZ38P8kOjuogq8XJAHkg&s",
-            type: "mystery"
-        },
-    ];
+        })) : [];
 
-    const handleRedeem = (reward) => {
+    const handleRedeem = async (reward) => {
         if (user.balance >= reward.requiredOrbits) {
-            // Create redemption object with the same structure as the wallet reward
-            const redemption = {
-                id: reward.id,
-                title: reward.title,
-                subtitle: reward.subtitle,
-                requiredOrbits: reward.requiredOrbits,
-                color: reward.color,
-                image: reward.image,
-                type: reward.type,
-                redeemedAt: new Date().toISOString(),
-                status: "not_approved",
-                redemptionCode: `RDM${String(Date.now()).slice(-6)}`
-            };
+            try {
+                const response = await redeemOffer({
+                    offerId: reward.id
+                }).unwrap();
 
-            // In a real app, you would:
-            // 1. Send this to your backend API
-            // 2. Update user balance
-            // 3. Add to redemptions list
-            // 4. Navigate to redemptions page or update state
+                const newBalance = user.balance - reward.requiredOrbits;
 
-            alert(`Successfully redeemed ${reward.title}! Check "My Redemptions" to track the approval status.`);
+                // Update local state
+                setUser(prevUser => ({
+                    ...prevUser,
+                    balance: newBalance
+                }));
 
-            // For demo purposes, log the redemption object
-            console.log('Redemption created:', redemption);
+                // Update Redux state
+                dispatch(updateWalletBalance(newBalance));
+
+                // Show MUI Alert for success
+                showAlert(
+                    'success',
+                    '🎉 Congratulations! 🎉',
+                    `You have successfully redeemed "${reward.title}"!\n\nYour new orbit balance: ${newBalance.toLocaleString()}\nRedemption Status: ${response.redemption?.status || 'Pending'}\n\nCheck "My Redemptions" to track the status.`
+                );
+
+                // Success response handling with toast
+                if (response.message && response.redemption) {
+                    toast.success(
+                        `Successfully redeemed ${reward.title}! Your redemption is ${response.redemption.status}. Check "My Redemptions" to track the status.`,
+                        {
+                            position: "top-right",
+                            autoClose: 5000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                        }
+                    );
+
+                    // Log the response for debugging
+                    console.log('Redemption response:', response);
+                } else {
+                    toast.success('Redemption successful!', {
+                        position: "top-right",
+                        autoClose: 3000,
+                    });
+                }
+
+            } catch (error) {
+                console.error('Redemption failed:', error);
+
+                // Handle different types of errors
+                let errorMessage = 'Redemption failed. Please try again later.';
+
+                if (error.data && error.data.message) {
+                    errorMessage = `Redemption failed: ${error.data.message}`;
+                } else if (error.message) {
+                    errorMessage = `Redemption failed: ${error.message}`;
+                }
+
+                // Show MUI Alert for error
+                showAlert(
+                    'error',
+                    '❌ Redemption Failed!',
+                    errorMessage
+                );
+
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+            }
+        } else {
+            const shortageAmount = reward.requiredOrbits - user.balance;
+
+            // Show MUI Alert for insufficient balance
+            showAlert(
+                'warning',
+                '⚠️ Insufficient Orbits!',
+                `You need ${shortageAmount.toLocaleString()} more orbits to redeem "${reward.title}".\n\nCurrent Balance: ${user.balance.toLocaleString()}\nRequired: ${reward.requiredOrbits.toLocaleString()}\n\nPurchase items from Puppy Digital Mart partner stores to earn more orbits!`
+            );
+
+            toast.warn(
+                `Insufficient orbits! You need ${shortageAmount} more orbits to redeem this offer.`,
+                {
+                    position: "top-right",
+                    autoClose: 4000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                }
+            );
         }
     };
 
@@ -255,10 +357,11 @@ const WalletPage = () => {
         border: "none",
         fontSize: "12px",
         fontWeight: "600",
-        cursor: isRedeemable ? "pointer" : "not-allowed",
+        cursor: isRedeemable && !isRedeeming ? "pointer" : "not-allowed",
         backgroundColor: isRedeemable ? color : "#e0e0e0",
         color: isRedeemable ? "white" : "#999",
         transition: "all 0.2s ease",
+        opacity: isRedeeming ? 0.7 : 1,
     });
 
     const tipsCard = {
@@ -296,6 +399,83 @@ const WalletPage = () => {
         lineHeight: "1.4",
     };
 
+    const loadingStyle = {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "200px",
+        fontSize: "16px",
+        color: "#666",
+    };
+
+    const errorStyle = {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "200px",
+        fontSize: "16px",
+        color: "#f44336",
+        textAlign: "center",
+    };
+
+    const noOffersStyle = {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "200px",
+        fontSize: "16px",
+        color: "#666",
+        textAlign: "center",
+    };
+
+    // Loading state - show loading if either offers are loading OR if we don't have wallet balance yet
+    if (isLoading || walletBalance === undefined || walletBalance === null) {
+        return (
+            <div style={containerStyle}>
+                <div style={headerStyle}>
+                    <h1 style={headerTitle}>Wallet</h1>
+                </div>
+                <div style={balanceCard}>
+                    <div style={balanceContent}>
+                        <div style={balanceIcon}>
+                            <div style={orbIcon}>ORB</div>
+                        </div>
+                        <div style={balanceInfo}>
+                            <div style={balanceLabel}>Your Orbits</div>
+                            <div style={balanceAmount}>Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                <div style={loadingStyle}>Loading offers...</div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div style={containerStyle}>
+                <div style={headerStyle}>
+                    <h1 style={headerTitle}>Wallet</h1>
+                </div>
+                <div style={balanceCard}>
+                    <div style={balanceContent}>
+                        <div style={balanceIcon}>
+                            <div style={orbIcon}>ORB</div>
+                        </div>
+                        <div style={balanceInfo}>
+                            <div style={balanceLabel}>Your Orbits</div>
+                            <div style={balanceAmount}>{user.balance?.toLocaleString() || "0"}</div>
+                        </div>
+                    </div>
+                </div>
+                <div style={errorStyle}>
+                    Failed to load offers. Please try again later.
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div style={containerStyle}>
             {/* Header */}
@@ -311,7 +491,7 @@ const WalletPage = () => {
                     </div>
                     <div style={balanceInfo}>
                         <div style={balanceLabel}>Your Orbits</div>
-                        <div style={balanceAmount}>{user.balance.toLocaleString()}</div>
+                        <div style={balanceAmount}>{user.balance?.toLocaleString() || "0"}</div>
                     </div>
                 </div>
             </div>
@@ -320,63 +500,86 @@ const WalletPage = () => {
             <div>
                 <h2 style={sectionTitle}>Redeem Rewards</h2>
 
-                <div style={rewardsGrid}>
-                    {rewards.map((reward) => {
-                        const isRedeemable = canRedeem(reward.requiredOrbits);
-                        const progressPercentage = (user.balance / reward.requiredOrbits) * 100;
+                {rewards.length === 0 ? (
+                    <div style={noOffersStyle}>
+                        No active offers available at the moment.
+                    </div>
+                ) : (
+                    <div style={rewardsGrid}>
+                        {rewards.map((reward) => {
+                            const isRedeemable = canRedeem(reward.requiredOrbits);
+                            const progressPercentage = Math.min((user.balance / reward.requiredOrbits) * 100, 100);
 
-                        return (
-                            <div key={reward.id} style={rewardCard(isRedeemable)}>
-                                {/* Image */}
-                                <div style={rewardImageBox}>
-                                    <img
-                                        src={reward.image}
-                                        alt={reward.title}
-                                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                                    />
-                                </div>
+                            // Dynamic color based on progress percentage
+                            const getProgressColor = (percentage) => {
+                                if (percentage >= 100) return "#4CAF50"; // Green for 100%
+                                if (percentage >= 75) return "#FF9800";   // Orange for 75-99%
+                                if (percentage >= 50) return "#FFC107";   // Amber for 50-74%
+                                if (percentage >= 25) return "#FF5722";   // Deep Orange for 25-49%
+                                return "#F44336";                         // Red for 0-24%
+                            };
 
-                                {/* Status */}
-                                <div style={{ marginBottom: "8px" }}>
-                                    {isRedeemable ? (
-                                        <Check size={18} color="green" />
-                                    ) : (
-                                        <Lock size={18} color="#999" />
-                                    )}
-                                </div>
+                            const progressColor = getProgressColor(progressPercentage);
 
-                                {/* Content */}
-                                <div style={rewardTitle}>{reward.title}</div>
-                                <div style={rewardSubtitle}>{reward.subtitle}</div>
-                                <div style={requiredInfo}>
-                                    Required: {reward.requiredOrbits} Orbits
-                                </div>
-
-                                {/* Progress */}
-                                <div style={progressContainer}>
-                                    <div style={progressBar}>
-                                        <div style={progressFill(progressPercentage, reward.color, isRedeemable)}></div>
+                            return (
+                                <div key={reward.id} style={rewardCard(isRedeemable)}>
+                                    {/* Image */}
+                                    <div style={rewardImageBox}>
+                                        <img
+                                            src={reward.image}
+                                            alt={reward.title}
+                                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                                            onError={(e) => {
+                                                // Fallback image if the converted URL fails
+                                                e.target.src = "https://via.placeholder.com/90x90?text=No+Image";
+                                            }}
+                                        />
                                     </div>
-                                    <div style={progressInfo}>
-                                        <span>{user.balance} / {reward.requiredOrbits}</span>
-                                        <span>{Math.round(progressPercentage)}%</span>
-                                    </div>
-                                </div>
 
-                                {/* Button */}
-                                <button
-                                    style={redeemButton(isRedeemable, reward.color)}
-                                    onClick={() => handleRedeem(reward)}
-                                    disabled={!isRedeemable}
-                                >
-                                    {isRedeemable
-                                        ? "Redeem Now"
-                                        : `Need ${reward.requiredOrbits - user.balance} more`}
-                                </button>
-                            </div>
-                        );
-                    })}
-                </div>
+                                    {/* Status */}
+                                    <div style={{ marginBottom: "8px" }}>
+                                        {isRedeemable ? (
+                                            <Check size={18} color="green" />
+                                        ) : (
+                                            <Lock size={18} color="#999" />
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div style={rewardTitle}>{reward.title}</div>
+                                    <div style={rewardSubtitle}>{reward.subtitle}</div>
+                                    <div style={requiredInfo}>
+                                        Required: {reward.requiredOrbits} Orbits
+                                    </div>
+
+                                    {/* Progress */}
+                                    <div style={progressContainer}>
+                                        <div style={progressBar}>
+                                            <div style={progressFill(progressPercentage, progressColor, isRedeemable)}></div>
+                                        </div>
+                                        <div style={progressInfo}>
+                                            <span>{user.balance} / {reward.requiredOrbits}</span>
+                                            <span>{Math.round(progressPercentage)}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Button */}
+                                    <button
+                                        style={redeemButton(isRedeemable, reward.color)}
+                                        onClick={() => handleRedeem(reward)}
+                                        disabled={!isRedeemable || isRedeeming}
+                                    >
+                                        {isRedeeming
+                                            ? "Redeeming..."
+                                            : isRedeemable
+                                                ? "Redeem Now"
+                                                : `Need ${reward.requiredOrbits - user.balance} more`}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* Tips Section */}
                 <div style={tipsCard}>
@@ -393,6 +596,55 @@ const WalletPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* MUI Alert Dialog */}
+            <Dialog
+                open={alertDialog.open}
+                onClose={handleCloseAlert}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    style: {
+                        borderRadius: '16px',
+                        padding: '8px'
+                    }
+                }}
+            >
+                <DialogTitle style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+                    {alertDialog.title}
+                </DialogTitle>
+                <DialogContent>
+                    <Alert
+                        severity={alertDialog.type}
+                        style={{
+                            marginBottom: '16px',
+                            borderRadius: '12px',
+                            fontSize: '14px'
+                        }}
+                    >
+                        <div style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>
+                            {alertDialog.message}
+                        </div>
+                    </Alert>
+                </DialogContent>
+                <DialogActions style={{ justifyContent: 'center', paddingBottom: '16px' }}>
+                    <Button
+                        onClick={handleCloseAlert}
+                        variant="contained"
+                        style={{
+                            backgroundColor: alertDialog.type === 'success' ? '#4CAF50' :
+                                alertDialog.type === 'error' ? '#f44336' : '#FF9800',
+                            color: 'white',
+                            borderRadius: '8px',
+                            padding: '8px 24px',
+                            textTransform: 'none',
+                            fontWeight: '600'
+                        }}
+                    >
+                        Got it!
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 };

@@ -48,7 +48,7 @@ export default function ProfileCard() {
                         fontFamily: "Poppins"
                     }}
                 >
-                    N
+                    {username ? username.charAt(0).toUpperCase() : 'Nil'}
                 </Avatar>
 
                 <Typography
