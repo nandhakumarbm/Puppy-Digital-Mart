@@ -11,6 +11,7 @@ import RedemptionReq from "../Admin/pages/RedemptionReq";
 import ManageAds from "../Admin/pages/ManageAds";
 import ProfileCard from "../Admin/pages/Profile";
 import ManageOffers from "../Admin/pages/ManageOffers";
+import LiveCoupons from "../Admin/pages/LiveCoupons";
 
 
 
@@ -33,5 +34,7 @@ export const adminRoutes = [
   { path: "/admin/redeemreq", element: <RedemptionReq /> },
   { path: "/admin/manageAds", element: <ManageAds /> },
   { path: "/admin/profile", element: <ProfileCard /> },
-  { path: "/admin/manageOffers", element: <ManageOffers /> }
+  { path: "/admin/manageOffers", element: <ManageOffers /> },
+  { path: "/admin/liveCoupons", element: <LiveCoupons /> }
+
 ]   

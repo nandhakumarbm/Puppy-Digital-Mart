@@ -119,6 +119,10 @@ export const apiSlice = createApi({
         body: data,
       }),
     }),
+    getLiveCoupons: builder.query({
+      query: () => "/coupon/alive",
+    }),
+
 
     getCarouselPoster: builder.query({
       query: () => "/ad/carousel-poster",
@@ -177,6 +181,7 @@ export const {
   useGenerateCouponMutation,
   useRedeemCouponMutation,
   useValidateCouponMutation,
+  useGetLiveCouponsQuery,
 
   // Ads
   useCreateAdMutation,

@@ -178,7 +178,8 @@ function SideMenu({ isOpen, onClose }) {
         { path: "/admin/redeemreq", icon: "📋", label: "Redemption Requests" },
         { path: "/admin/manageAds", icon: "➕", label: "Manage Ads" },
         { path: "/admin/manageOffers", icon: "🛍️", label: "Manage Offers" },
-        { path: "/admin/profile", icon: "👤", label: "Profile" }
+        { path: "/admin/liveCoupons", icon: "🎟️", label: "Manage Coupons" },
+        { path: "/admin/profile", icon: "👤", label: "Profile" },
     ];
 
     const itemsToShow = user?.role === "admin" ? adminMenuItems : menuItems;
