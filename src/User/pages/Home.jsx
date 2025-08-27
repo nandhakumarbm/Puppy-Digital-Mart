@@ -6,7 +6,6 @@ import SectionTitle from "../components/SectionTitle";
 import QRScannerCard from "../components/QRScannerCard";
 import CouponInputCard from "../components/CouponInputCard";
 import RedeemCard from "../components/RedeemCard";
-import FooterInfo from "../components/FooterInfo";
 import ImageCarousel from "../components/ImageCarousel";
 import SelectAction from "../components/SelectAction";
 import Disclaimer from "../components/Disclaimer";
@@ -14,6 +13,7 @@ import AdVideoModal from "../components/AdVideoModal";
 import { useDispatch } from "react-redux";
 import { updateWalletBalance } from "../../Slices/authSlice";
 import Modal from "../components/Modal";
+import ImprovedDevCredits from "../components/ImprovedDevCredits";
 
 function Home() {
     const [couponInput, setCouponInput] = useState("");
@@ -88,8 +88,7 @@ function Home() {
                 setAppliedCoupon(v.toUpperCase());
                 setCouponSuccess("Coupon is valid! Ready to redeem.");
                 setModalType(""); // Close modal
-
-                console.log('Coupon validation successful:', response);
+                showAlert("Coupon is valid! Ready to redeem", "success", 3000);
             } else {
                 // Coupon is not valid - show error
                 const errorMessage = response.message || "Invalid coupon code";
@@ -258,7 +257,6 @@ function Home() {
             </Modal>
 
             <Disclaimer />
-            <FooterInfo />
 
             {/* Ad Video Modal */}
             <AdVideoModal
@@ -282,6 +280,7 @@ function Home() {
                     {alert.message}
                 </Alert>
             </Snackbar>
+            <ImprovedDevCredits />
         </div>
     );
 }

@@ -71,13 +71,13 @@ function Disclaimer() {
 
             <p style={styles.p}>By using this application, you acknowledge and agree that:</p>
             <ul style={styles.ul}>
-                <li style={styles.li}>Virtual coins/rewards have <span style={styles.highlight}>no cash equivalence</span>.</li>
+                <li style={styles.li}>Virtual coins/rewards have<br/> <span style={styles.highlight}>no cash equivalence</span>.</li>
                 <li style={styles.li}>The app owner may modify or terminate the reward system at any time without prior notice.</li>
                 <li style={styles.li}>The reward system is built to enhance engagement — no real money payouts are involved.</li>
             </ul>
 
             <p style={styles.p}>
-                For queries about the reward system or its legal aspects, reach us at <span style={styles.highlight}>[your support email]</span>.
+                For queries about the reward system or its legal aspects, reach us at <span style={styles.highlight}><a href="mailto:puppyalways@gmail.com" style={{ color: "white", textDecoration: "none" }}>puppyalways@gmail.com</a></span>.
             </p>
         </div>
     );

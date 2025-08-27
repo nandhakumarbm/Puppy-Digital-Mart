@@ -18,8 +18,6 @@ function SideMenu({ isOpen, onClose }) {
             visibility: isOpen ? "visible" : "hidden",
             transition: "opacity 0.3s ease, visibility 0.3s ease",
             zIndex: 9999,
-            WebkitBackdropFilter: "blur(3px)",
-            backdropFilter: "blur(3px)",
         },
         menu: {
             position: "fixed",
@@ -28,7 +26,7 @@ function SideMenu({ isOpen, onClose }) {
             width: "75vw",
             maxWidth: "300px",
             minWidth: "260px",
-            height: "100vh",
+            height: "100%", // Respect parent container and safe areas
             backgroundColor: "#ffffff",
             boxShadow: "2px 0 20px rgba(0, 0, 0, 0.1)",
             transform: isOpen ? "translateX(0)" : "translateX(-100%)",
@@ -39,6 +37,7 @@ function SideMenu({ isOpen, onClose }) {
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
             overflowY: "auto",
             WebkitOverflowScrolling: "touch",
+            paddingBottom: "env(safe-area-inset-bottom, 20px)", // Handle iOS safe areas
         },
         header: {
             padding: "20px 16px 16px 16px",
@@ -79,16 +78,16 @@ function SideMenu({ isOpen, onClose }) {
             WebkitTapHighlightColor: "transparent",
         },
         menuContent: {
-            flex: 1,
             display: "flex",
             flexDirection: "column",
-            minHeight: 0,
+            flex: 1,
+            overflowY: "auto",
         },
         menuItemsContainer: {
-            flex: 1,
-            padding: "4px 0 16px 0",
+            padding: "4px 0",
             display: "flex",
             flexDirection: "column",
+            flexGrow: 0, // Prevent excessive stretching
         },
         menuItem: {
             display: "flex",
@@ -108,16 +107,21 @@ function SideMenu({ isOpen, onClose }) {
             WebkitTapHighlightColor: "transparent",
         },
         logoutContainer: {
-            marginTop: "auto",
+            borderTop: "1px solid #f3f4f6",
+            background: "#ffffff", // Removed debugging background
             flexShrink: 0,
+            padding: "16px 0",
+            position: "sticky",
+            bottom: "env(safe-area-inset-bottom, 0px)", // Stick to bottom
+            zIndex: 2,
         },
         logoutItem: {
             display: "flex",
             alignItems: "center",
-            padding: "12px 20px",
+            padding: "16px 20px",
             color: "#dc2626",
             background: "transparent",
-            border: "none",
+            border: "none", // Removed debugging border
             fontSize: "16px",
             fontWeight: "500",
             cursor: "pointer",
@@ -125,8 +129,8 @@ function SideMenu({ isOpen, onClose }) {
             textAlign: "left",
             gap: "14px",
             minHeight: "48px",
-            borderTop: "1px solid #f3f4f6",
             width: "100%",
+            zIndex: 3,
         },
         divider: {
             height: "1px",
@@ -209,20 +213,15 @@ function SideMenu({ isOpen, onClose }) {
                     <div style={styles.logoContainer}>
                         <p>Puppy Digital Mart</p>
                     </div>
-                    <button style={styles.closeBtn} onClick={onClose}>
-                        ✕
-                    </button>
+                    <button style={styles.closeBtn} onClick={onClose}>✕</button>
                 </div>
 
                 <div style={styles.menuContent}>
                     <div style={styles.menuItemsContainer}>
                         {itemsToShow.map((item, index) => (
                             <React.Fragment key={item.path}>
-                                <button
-                                    style={styles.menuItem}
-                                    onClick={() => handleNavigate(item.path)}
-                                >
-                                    <div className="active-border" style={styles.activeBorder}></div>
+                                <button style={styles.menuItem} onClick={() => handleNavigate(item.path)}>
+                                    <div style={styles.activeBorder}></div>
                                     <span>{item.icon}</span>
                                     <span>{item.label}</span>
                                 </button>
@@ -232,11 +231,8 @@ function SideMenu({ isOpen, onClose }) {
                     </div>
 
                     <div style={styles.logoutContainer}>
-                        <button
-                            style={styles.logoutItem}
-                            onClick={handleLogout}
-                        >
-                            <div className="logout-border" style={styles.logoutBorder}></div>
+                        <button style={styles.logoutItem} onClick={handleLogout}>
+                            <div style={styles.logoutBorder}></div>
                             <span>🚪</span>
                             <span>Logout</span>
                         </button>

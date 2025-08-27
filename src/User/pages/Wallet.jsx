@@ -6,6 +6,7 @@ import { useDispatch } from "react-redux";
 import { updateWalletBalance } from "../../Slices/authSlice";
 import { toast } from "react-toastify";
 import { Alert, AlertTitle, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import ImprovedDevCredits from "../components/ImprovedDevCredits";
 
 const WalletPage = () => {
     const userAuth = useSelector((state) => state.auth.wallet);
@@ -645,6 +646,7 @@ const WalletPage = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <ImprovedDevCredits />
         </div>
     );
 };

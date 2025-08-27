@@ -270,7 +270,7 @@ const ManageOffers = () => {
                         <div style={sectionHeaderStyle}>
                             <h2 style={sectionTitleStyle}>
                                 <Eye size={24} />
-                                Active Advertisements ({offers.length})
+                                Active Offers ({offers.length})
                             </h2>
                             <div style={showingActiveStyle}>
                                 <span style={activeIndicatorStyle}>●</span>

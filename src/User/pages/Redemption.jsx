@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Clock, AlertCircle, Gift, Calendar, CheckCircle } from "lucide-react";
 import { useGetAllRedemptionsQuery } from "../../utils/apiSlice";
+import ImprovedDevCredits from "../components/ImprovedDevCredits";
 
 const Redemption = () => {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -472,12 +473,13 @@ const Redemption = () => {
                 color: "#1976D2",
                 lineHeight: "1.4",
               }}>
-                Your redemptions are being reviewed by our team. You'll be notified once they're approved and ready to use!
+                Reached out the puppy digital mart to redeem the offer. You'll be notified once they're approved and ready to use!
               </div>
             </div>
           </div>
         </div>
       )}
+      <ImprovedDevCredits />
     </div>
   );
 };

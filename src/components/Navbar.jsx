@@ -3,10 +3,12 @@ import Logo from "../assets/PuppyLogo.jpg";
 import SideMenu from "./SideMenu";
 import { useSelector } from "react-redux";
 import { getUser } from "../utils/auth";
+import { useNavigate } from "react-router-dom";
 
 function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const user = useSelector((state) => state.auth);
+    const navigate = useNavigate();
 
     const role = getUser()?.role;
 
@@ -85,7 +87,7 @@ function Navbar() {
                 {
                     role != "admin" && (
                         <div style={headerStyle}>
-                            <div style={orbBadge}>
+                            <div onClick={() => navigate("/user/wallet")} style={orbBadge}>
                                 ORB {user.wallet.walletBalance}
                             </div>
                         </div>
