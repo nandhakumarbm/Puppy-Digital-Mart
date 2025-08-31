@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Clock, AlertCircle, Gift, Calendar, CheckCircle } from "lucide-react";
 import { useGetAllRedemptionsQuery } from "../../utils/apiSlice";
-import ImprovedDevCredits from "../components/ImprovedDevCredits";
 
 const Redemption = () => {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -479,7 +478,6 @@ const Redemption = () => {
           </div>
         </div>
       )}
-      <ImprovedDevCredits />
     </div>
   );
 };

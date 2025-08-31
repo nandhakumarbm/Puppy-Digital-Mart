@@ -4,13 +4,15 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import { Close } from "@mui/icons-material";
 import "react-circular-progressbar/dist/styles.css";
 
-const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
+const AdVideoModal = ({ open, onClose, onComplete, adData, orbitValue }) => {
+
     const videoRef = useRef(null);
     const [progress, setProgress] = useState(0);
     const [isVideoCompleted, setIsVideoCompleted] = useState(false);
-    const [canClose, setCanClose] = useState(false);
+    const [canClose, setCanClose] = useState(true); // Allow closing while playing
     const [videoDuration, setVideoDuration] = useState(0);
     const [actualDuration, setActualDuration] = useState(0);
+    const [currentOrbitCount, setCurrentOrbitCount] = useState(0); // New state for orbit count
     const intervalRef = useRef(null);
     const playerRef = useRef(null);
 
@@ -34,13 +36,15 @@ const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
     };
 
     useEffect(() => {
+        console.log(adData.title);
         if (open && adData?.mediaUrl) {
             // Reset states
             setProgress(0);
             setIsVideoCompleted(false);
-            setCanClose(false);
+            setCanClose(true); // Allow closing during video
             setVideoDuration(0);
             setActualDuration(0);
+            setCurrentOrbitCount(0); // Reset orbit count
 
             // Load YouTube Player API for YouTube videos
             const videoId = getYouTubeVideoId(adData.mediaUrl);
@@ -108,26 +112,29 @@ const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
     const startProgressTracking = (duration = null) => {
         const videoDuration = duration || actualDuration || 30000; // Use actual duration or fallback to 30 seconds
         const startTime = Date.now();
+        const targetOrbitValue = orbitValue || 100; // Default orbit value if not provided
 
         intervalRef.current = setInterval(() => {
             const elapsed = Date.now() - startTime;
             const progressPercent = Math.min((elapsed / videoDuration) * 100, 100);
             setProgress(Math.round(progressPercent));
 
+            // Calculate current orbit count based on progress
+            // Formula: (progress / 100) * targetOrbitValue
+            const currentOrbits = Math.floor((progressPercent / 100) * targetOrbitValue);
+            setCurrentOrbitCount(currentOrbits);
+
             if (progressPercent >= 100) {
                 setIsVideoCompleted(true);
-                setCanClose(true);
+                setCurrentOrbitCount(targetOrbitValue); // Ensure we reach exactly the target
                 clearInterval(intervalRef.current);
-
-                // Auto-complete after reaching 100%
-                setTimeout(() => {
-                    handleComplete();
-                }, 1000);
             }
         }, 100); // Update every 100ms for smooth progress
     };
 
     const handleClose = () => {
+        // Clear interval when closing
+        clearInterval(intervalRef.current);
         onClose();
     };
 
@@ -270,9 +277,9 @@ const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
     return (
         <Modal
             open={open}
-            onClose={() => { }} // Disable modal close
-            disableEscapeKeyDown={true} // Disable ESC key
-            disableBackdropClick={true} // Disable backdrop click
+            onClose={handleClose} // Allow closing during video
+            disableEscapeKeyDown={false} // Allow ESC key
+            disableBackdropClick={false} // Allow backdrop click
         >
             <Box
                 sx={{
@@ -292,14 +299,14 @@ const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
                     overflow: "auto"
                 }}
             >
-                {/* Close button - only enabled after video completion */}
+                {/* Close button - always enabled */}
                 <IconButton
                     onClick={handleClose}
                     sx={{
                         position: 'absolute',
                         right: 8,
                         top: 8,
-                        color: canClose ? 'var(--primary-text)' : 'var(--secondary-text)',
+                        color: 'var(--primary-text)',
                     }}
                 >
                     <Close />
@@ -318,34 +325,36 @@ const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
                     {adData.title || "Advertisement"}
                 </Typography>
 
-                {/* Ad Description */}
-                {adData.description && (
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            mb: 2,
-                            color: 'var(--secondary-text)',
-                            fontStyle: 'italic'
-                        }}
-                    >
-                        {adData.description}
-                    </Typography>
-                )}
-
                 {/* Video Container */}
                 {renderVideo()}
 
-                {/* Progress Section */}
-                <Typography
-                    variant="body1"
-                    sx={{
-                        mb: 2,
-                        fontWeight: 500,
-                        color: 'var(--primary-text)'
-                    }}
-                >
-                    Advertisement Progress
-                </Typography>
+                {/* Orbit Count Display */}
+                <Box sx={{ mb: 2 }}>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontWeight: 'bold',
+                            color: 'var(--accent-primary)',
+                            mb: 1,
+                            background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text'
+                        }}
+                    >
+                        {currentOrbitCount}
+                    </Typography>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: 'var(--secondary-text)',
+                            fontWeight: 500,
+                            fontFamily: 'var(--font-family)',
+                        }}
+                    >
+                        Orbits Earned
+                    </Typography>
+                </Box>
 
                 <Box sx={{ width: 120, mx: "auto", mb: 2 }}>
                     <CircularProgressbar
@@ -361,22 +370,7 @@ const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
                     />
                 </Box>
 
-                {/* Status Messages */}
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: isVideoCompleted ? '#4CAF50' : 'var(--secondary-text)',
-                        fontWeight: isVideoCompleted ? 600 : 400,
-                        mb: 1
-                    }}
-                >
-                    {isVideoCompleted
-                        ? "✅ Advertisement completed! You can now proceed..."
-                        : "⏳ Please watch the complete advertisement to redeem your reward"
-                    }
-                </Typography>
-
-                {/* Warning message */}
+                {/* Info message */}
                 {!isVideoCompleted && (
                     <Typography
                         variant="caption"
@@ -387,7 +381,7 @@ const AdVideoModal = ({ open, onClose, onComplete, adData }) => {
                             mb: 2
                         }}
                     >
-                        ⚠️ Video cannot be skipped or paused. Please wait for completion.
+                        💡 You can close this anytime, but watching the full video earns maximum orbits!
                     </Typography>
                 )}
 

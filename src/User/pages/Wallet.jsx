@@ -6,8 +6,7 @@ import { useDispatch } from "react-redux";
 import { updateWalletBalance } from "../../Slices/authSlice";
 import { toast } from "react-toastify";
 import { Alert, AlertTitle, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import ImprovedDevCredits from "../components/ImprovedDevCredits";
-
+    
 const WalletPage = () => {
     const userAuth = useSelector((state) => state.auth.wallet);
     const dispatch = useDispatch();
@@ -55,7 +54,7 @@ const WalletPage = () => {
         });
     };
 
-    // Function to extract Google Drive file ID and convert to direct link
+    // Optimized function to extract Google Drive file ID and convert to high-quality direct link
     const convertGoogleDriveUrl = (url) => {
         if (!url) return '';
 
@@ -63,7 +62,17 @@ const WalletPage = () => {
         const driveMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
         if (driveMatch) {
             const fileId = driveMatch[1];
-            return `https://drive.google.com/uc?export=view&id=${fileId}`;
+            // Use thumbnail endpoint with high quality settings for better image clarity
+            return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
+        }
+
+        // Check if it's already a direct Google Drive link
+        if (url.includes('drive.google.com/uc?')) {
+            const fileIdMatch = url.match(/id=([a-zA-Z0-9-_]+)/);
+            if (fileIdMatch) {
+                const fileId = fileIdMatch[1];
+                return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
+            }
         }
 
         // Return original URL if not a Google Drive link
@@ -529,11 +538,14 @@ const WalletPage = () => {
                                         <img
                                             src={reward.image}
                                             alt={reward.title}
-                                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                                            onError={(e) => {
-                                                // Fallback image if the converted URL fails
-                                                e.target.src = "https://via.placeholder.com/90x90?text=No+Image";
+                                            style={{ 
+                                                width: "100%", 
+                                                height: "100%", 
+                                                objectFit: "cover",
+                                                imageRendering: "auto",
+                                                WebkitImageSmoothing: "auto"
                                             }}
+                                            loading="lazy"
                                         />
                                     </div>
 
@@ -646,7 +658,6 @@ const WalletPage = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-            <ImprovedDevCredits />
         </div>
     );
 };

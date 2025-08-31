@@ -14,6 +14,7 @@ import { useDispatch } from "react-redux";
 import { updateWalletBalance } from "../../Slices/authSlice";
 import Modal from "../components/Modal";
 import ImprovedDevCredits from "../components/ImprovedDevCredits";
+import LocationCard from "../components/LocationCard";
 
 function Home() {
     const [couponInput, setCouponInput] = useState("");
@@ -41,6 +42,8 @@ function Home() {
 
     // Fetch advertisement data
     const { data: adData, error: adError, isLoading: adLoading } = useGetAddForRedeemQuery();
+
+    const [ordbitValue, setOrdbitValue] = useState(0);
 
     const closeModal = () => setModalType("");
     const closeAlert = () => setAlert({ ...alert, open: false });
@@ -81,6 +84,8 @@ function Home() {
             const response = await validateCoupon({
                 code: v.toUpperCase()
             }).unwrap();
+
+            setOrdbitValue(response.coupon.value);
 
             // Check if coupon is valid
             if (response.valid === true) {
@@ -213,7 +218,6 @@ function Home() {
     };
 
     const pageStyle = {
-        minHeight: "100vh",
         backgroundColor: "var(--background)",
         color: "var(--primary-text)",
         padding: "10px",
@@ -256,6 +260,8 @@ function Home() {
                 )}
             </Modal>
 
+            {/* <LocationCard /> */}
+
             <Disclaimer />
 
             {/* Ad Video Modal */}
@@ -264,6 +270,7 @@ function Home() {
                 onClose={handleAdVideoClose}
                 onComplete={handleAdVideoComplete}
                 adData={adData}
+                orbitValue ={ordbitValue}
             />
 
             {/* MUI Alert Snackbar */}
