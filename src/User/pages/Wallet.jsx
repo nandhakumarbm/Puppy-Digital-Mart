@@ -23,6 +23,10 @@ const WalletPage = () => {
         balance: walletBalance,
     });
 
+    // State for scroll position and animations
+    const [scrollY, setScrollY] = useState(0);
+    const [isScrolling, setIsScrolling] = useState(false);
+
     // State for MUI Alert Dialog
     const [alertDialog, setAlertDialog] = useState({
         open: false,
@@ -30,6 +34,32 @@ const WalletPage = () => {
         title: '',
         message: '',
     });
+
+    // Smooth scroll effect
+    useEffect(() => {
+        let scrollTimeout;
+        
+        const handleScroll = () => {
+            setScrollY(window.scrollY);
+            setIsScrolling(true);
+            
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                setIsScrolling(false);
+            }, 150);
+        };
+
+        // Add smooth scroll behavior to the page
+        document.documentElement.style.scrollBehavior = 'smooth';
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            clearTimeout(scrollTimeout);
+            document.documentElement.style.scrollBehavior = 'auto';
+        };
+    }, []);
 
     // Update local state when Redux state changes
     useEffect(() => {
@@ -54,7 +84,7 @@ const WalletPage = () => {
         });
     };
 
-    // Optimized function to extract Google Drive file ID and convert to high-quality direct link
+    // Enhanced function to get high-quality Google Drive images
     const convertGoogleDriveUrl = (url) => {
         if (!url) return '';
 
@@ -62,8 +92,8 @@ const WalletPage = () => {
         const driveMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
         if (driveMatch) {
             const fileId = driveMatch[1];
-            // Use thumbnail endpoint with high quality settings for better image clarity
-            return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
+            // Use higher quality settings for crystal clear images
+            return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800-h800`;
         }
 
         // Check if it's already a direct Google Drive link
@@ -71,7 +101,7 @@ const WalletPage = () => {
             const fileIdMatch = url.match(/id=([a-zA-Z0-9-_]+)/);
             if (fileIdMatch) {
                 const fileId = fileIdMatch[1];
-                return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
+                return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800-h800`;
             }
         }
 
@@ -194,10 +224,13 @@ const WalletPage = () => {
 
     const canRedeem = (requiredOrbits) => user.balance >= requiredOrbits;
 
-    // Styles
+    // Enhanced styles with smooth animations and parallax effects
     const containerStyle = {
         backgroundColor: "#f5f5f5",
         padding: "0px 16px",
+        minHeight: "100vh",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transform: isScrolling ? 'translateY(-1px)' : 'translateY(0)',
     };
 
     const headerStyle = {
@@ -205,6 +238,8 @@ const WalletPage = () => {
         alignItems: "center",
         justifyContent: "space-between",
         marginBottom: "24px",
+        transform: `translateY(${scrollY * 0.1}px)`,
+        transition: "transform 0.1s ease-out",
     };
 
     const headerTitle = {
@@ -221,6 +256,8 @@ const WalletPage = () => {
         padding: "24px",
         marginBottom: "32px",
         boxShadow: "0 8px 24px rgba(126, 87, 194, 0.3)",
+        transform: `translateY(${scrollY * 0.05}px)`,
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     };
 
     const balanceContent = {
@@ -237,6 +274,7 @@ const WalletPage = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        transition: "transform 0.3s ease",
     };
 
     const orbIcon = {
@@ -250,6 +288,7 @@ const WalletPage = () => {
         color: "white",
         fontWeight: "bold",
         fontSize: "12px",
+        animation: "float 3s ease-in-out infinite",
     };
 
     const balanceInfo = {
@@ -274,6 +313,8 @@ const WalletPage = () => {
         fontWeight: "600",
         color: "#333",
         marginBottom: "16px",
+        transform: `translateY(${scrollY * 0.08}px)`,
+        transition: "transform 0.1s ease-out",
     };
 
     const rewardsGrid = {
@@ -283,7 +324,7 @@ const WalletPage = () => {
         marginBottom: "24px",
     };
 
-    const rewardCard = (isRedeemable) => ({
+    const rewardCard = (isRedeemable, index) => ({
         backgroundColor: "white",
         borderRadius: "16px",
         padding: "16px",
@@ -291,24 +332,34 @@ const WalletPage = () => {
         border: "2px solid",
         borderColor: isRedeemable ? "#e0e0e0" : "#f5f5f5",
         opacity: isRedeemable ? 1 : 0.6,
-        transition: "all 0.3s ease",
+        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
+        transform: `translateY(${scrollY * 0.02 * (index + 1)}px)`,
+        animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+        cursor: "pointer",
     });
 
+    // Enhanced image container with better responsiveness
     const rewardImageBox = {
-        width: "90px",
-        height: "90px",
-        borderRadius: "12px",
+        width: "120px",  // Increased from 90px
+        height: "120px", // Increased from 90px
+        borderRadius: "16px", // More rounded
         backgroundColor: "#fff",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
         marginBottom: "12px",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
+        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        position: "relative",
+        "&:hover": {
+            transform: "scale(1.05)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.2)"
+        }
     };
 
     const rewardTitle = {
@@ -349,7 +400,8 @@ const WalletPage = () => {
         width: `${Math.min(percentage, 100)}%`,
         backgroundColor: color,
         opacity: isRedeemable ? 1 : 0.6,
-        transition: "width 0.3s ease",
+        transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+        animation: "progressSlide 1s ease-out",
     });
 
     const progressInfo = {
@@ -370,8 +422,13 @@ const WalletPage = () => {
         cursor: isRedeemable && !isRedeeming ? "pointer" : "not-allowed",
         backgroundColor: isRedeemable ? color : "#e0e0e0",
         color: isRedeemable ? "white" : "#999",
-        transition: "all 0.2s ease",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         opacity: isRedeeming ? 0.7 : 1,
+        transform: "translateY(0)",
+        "&:hover": {
+            transform: isRedeemable ? "translateY(-2px)" : "translateY(0)",
+            boxShadow: isRedeemable ? "0 4px 12px rgba(0,0,0,0.2)" : "none"
+        }
     });
 
     const tipsCard = {
@@ -379,6 +436,8 @@ const WalletPage = () => {
         border: "1px solid #BBDEFB",
         borderRadius: "12px",
         padding: "16px",
+        transform: `translateY(${scrollY * 0.03}px)`,
+        transition: "transform 0.1s ease-out",
     };
 
     const tipsContent = {
@@ -438,10 +497,55 @@ const WalletPage = () => {
         textAlign: "center",
     };
 
+    // Add CSS animations
+    const cssAnimations = `
+        <style>
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-5px); }
+            }
+            
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes progressSlide {
+                from { width: 0%; }
+                to { width: var(--progress-width, 0%); }
+            }
+            
+            .reward-card:hover {
+                transform: translateY(-4px) !important;
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+            }
+            
+            .reward-image:hover {
+                transform: scale(1.1);
+            }
+            
+            .smooth-scroll {
+                scroll-behavior: smooth;
+            }
+            
+            * {
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+        </style>
+    `;
+
     // Loading state - show loading if either offers are loading OR if we don't have wallet balance yet
     if (isLoading || walletBalance === undefined || walletBalance === null) {
         return (
             <div style={containerStyle}>
+                <div dangerouslySetInnerHTML={{ __html: cssAnimations }} />
                 <div style={headerStyle}>
                     <h1 style={headerTitle}>Wallet</h1>
                 </div>
@@ -465,6 +569,7 @@ const WalletPage = () => {
     if (error) {
         return (
             <div style={containerStyle}>
+                <div dangerouslySetInnerHTML={{ __html: cssAnimations }} />
                 <div style={headerStyle}>
                     <h1 style={headerTitle}>Wallet</h1>
                 </div>
@@ -487,7 +592,9 @@ const WalletPage = () => {
     }
 
     return (
-        <div style={containerStyle}>
+        <div style={containerStyle} className="smooth-scroll">
+            <div dangerouslySetInnerHTML={{ __html: cssAnimations }} />
+            
             {/* Header */}
             <div style={headerStyle}>
                 <h1 style={headerTitle}>Wallet</h1>
@@ -516,7 +623,7 @@ const WalletPage = () => {
                     </div>
                 ) : (
                     <div style={rewardsGrid}>
-                        {rewards.map((reward) => {
+                        {rewards.map((reward, index) => {
                             const isRedeemable = canRedeem(reward.requiredOrbits);
                             const progressPercentage = Math.min((user.balance / reward.requiredOrbits) * 100, 100);
 
@@ -532,20 +639,50 @@ const WalletPage = () => {
                             const progressColor = getProgressColor(progressPercentage);
 
                             return (
-                                <div key={reward.id} style={rewardCard(isRedeemable)}>
-                                    {/* Image */}
+                                <div 
+                                    key={reward.id} 
+                                    style={rewardCard(isRedeemable, index)}
+                                    className="reward-card"
+                                >
+                                    {/* Enhanced Image with better quality */}
                                     <div style={rewardImageBox}>
                                         <img
                                             src={reward.image}
                                             alt={reward.title}
+                                            className="reward-image"
                                             style={{ 
                                                 width: "100%", 
                                                 height: "100%", 
                                                 objectFit: "cover",
-                                                imageRendering: "auto",
-                                                WebkitImageSmoothing: "auto"
+                                                objectPosition: "center",
+                                                imageRendering: "optimizeQuality",
+                                                WebkitImageSmoothing: "high",
+                                                transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                                filter: "contrast(1.1) saturate(1.1)",
+                                                borderRadius: "12px",
                                             }}
                                             loading="lazy"
+                                            onError={(e) => {
+                                                // Fallback for broken images
+                                                e.target.style.display = 'none';
+                                                e.target.parentNode.innerHTML = `
+                                                    <div style="
+                                                        width: 100%; 
+                                                        height: 100%; 
+                                                        background: linear-gradient(135deg, #FF8A65, #EF5350);
+                                                        display: flex;
+                                                        align-items: center;
+                                                        justify-content: center;
+                                                        color: white;
+                                                        font-size: 12px;
+                                                        font-weight: bold;
+                                                        text-align: center;
+                                                        border-radius: 12px;
+                                                    ">
+                                                        ${reward.title}
+                                                    </div>
+                                                `;
+                                            }}
                                         />
                                     </div>
 
@@ -568,7 +705,12 @@ const WalletPage = () => {
                                     {/* Progress */}
                                     <div style={progressContainer}>
                                         <div style={progressBar}>
-                                            <div style={progressFill(progressPercentage, progressColor, isRedeemable)}></div>
+                                            <div 
+                                                style={{
+                                                    ...progressFill(progressPercentage, progressColor, isRedeemable),
+                                                    '--progress-width': `${Math.min(progressPercentage, 100)}%`
+                                                }}
+                                            ></div>
                                         </div>
                                         <div style={progressInfo}>
                                             <span>{user.balance} / {reward.requiredOrbits}</span>

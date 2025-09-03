@@ -40,6 +40,9 @@ export const apiSlice = createApi({
     getUserProfile: builder.query({
       query: () => "/user/profile",
     }),
+    getStores: builder.query({
+      query: () => "/store/store",
+    }),
 
     // ===== ADMIN =====
     getAllUsers: builder.query({
@@ -57,6 +60,30 @@ export const apiSlice = createApi({
         method: "POST",
         body: redemptionId,
       }),
+    }),
+    createStore: builder.mutation({
+      query: (data) => ({
+        url: "/store/store",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    editStore: builder.mutation({
+      query: (data) => ({
+        url: "/store/store",
+        method: "PUT",
+        body: data,
+      }),
+    }),
+    deleteStore: builder.mutation({
+      query: (storeId) => ({
+        url: "/store/store",
+        method: "DELETE",
+        body: storeId,
+      }),
+    }),
+    getStore: builder.query({
+      query: (storeId) => `/store/store/`,
     }),
 
     // ===== REDEMPTION =====
@@ -123,7 +150,6 @@ export const apiSlice = createApi({
       query: () => "/coupon/alive",
     }),
 
-
     getCarouselPoster: builder.query({
       query: () => "/ad/carousel-poster",
     }),
@@ -161,12 +187,17 @@ export const {
   // User
   useGetUserWalletQuery,
   useGetUserProfileQuery,
+  useGetStoresQuery,
 
   // Admin
   useGetAllUsersQuery,
   useGetUserByPhoneQuery,
   useGetAdminRedemptionsQuery,
   useApproveRedemptionMutation,
+  useCreateStoreMutation,
+  useEditStoreMutation,
+  useDeleteStoreMutation,
+  useGetStoreQuery,
 
   // Redemption
   useGetAllRedemptionsQuery,

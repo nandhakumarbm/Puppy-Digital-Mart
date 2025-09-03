@@ -24,7 +24,7 @@ const AdVideoModal = ({ open, onClose, onComplete, adData, orbitValue }) => {
         const match = url.match(regExp);
 
         return (match && match[2].length === 11) ? match[2] : null;
-    };
+    };  
 
     // Convert YouTube URL to embed URL with no controls
     const getEmbedUrl = (url) => {
@@ -36,7 +36,6 @@ const AdVideoModal = ({ open, onClose, onComplete, adData, orbitValue }) => {
     };
 
     useEffect(() => {
-        console.log(adData.title);
         if (open && adData?.mediaUrl) {
             // Reset states
             setProgress(0);
@@ -102,7 +101,7 @@ const AdVideoModal = ({ open, onClose, onComplete, adData, orbitValue }) => {
                     setActualDuration(30000); // 30 seconds fallback
                     startProgressTracking(30000);
 
-                    // Clean up
+                    // Clean up 
                     document.body.removeChild(hiddenDiv);
                 }
             }
