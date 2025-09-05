@@ -29,6 +29,8 @@ const MultiStoreManagement = () => {
   const [editStore, { isLoading: isEditLoading }] = useEditStoreMutation();
   const [deleteStore, { isLoading: isDeleting }] = useDeleteStoreMutation();
 
+  console.log(storesData);
+
   // Convert single store response to array format for consistency
   const stores = storesData ? (Array.isArray(storesData) ? storesData : [storesData]) : [];
 
@@ -527,7 +529,7 @@ const MultiStoreManagement = () => {
 
       <style jsx>{`
         .app-container {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: '#E5E7EB';
           padding: 2rem;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }

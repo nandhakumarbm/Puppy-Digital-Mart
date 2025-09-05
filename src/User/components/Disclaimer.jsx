@@ -77,7 +77,7 @@ function Disclaimer() {
             </ul>
 
             <p style={styles.p}>
-                For queries about the reward system or its legal aspects, reach us at <span style={styles.highlight}><a href="mailto:puppyalways@gmail.com" style={{ color: "white", textDecoration: "none" }}>puppyalways@gmail.com</a></span>.
+                For queries about the reward system or its legal aspects, reach us at <span style={styles.highlight}><a href="mailto:puppyorbits@gmail.com" style={{ color: "white", textDecoration: "none" }}>puppyorbits@gmail.com</a></span>.
             </p>
         </div>
     );

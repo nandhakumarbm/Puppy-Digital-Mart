@@ -123,14 +123,6 @@ const StoreList = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   const handleStoreCardHover = (e, isHover) => {
     if (isHover) {
       Object.assign(e.target.style, styles.storeCardHover);
@@ -220,20 +212,6 @@ const StoreList = () => {
                 <span style={styles.icon}>📞</span>
                 <span>{store.phoneNo}</span>
               </div>
-            </div>
-
-            <div
-              style={{
-                ...styles.statusBadge,
-                ...(store.isActive ? styles.activeBadge : styles.inactiveBadge)
-              }}
-            >
-              <span>{store.isActive ? '✅' : '❌'}</span>
-              <span>{store.isActive ? 'Active' : 'Inactive'}</span>
-            </div>
-
-            <div style={styles.dateText}>
-              Created: {formatDate(store.createdAt)}
             </div>
           </div>
         ))}

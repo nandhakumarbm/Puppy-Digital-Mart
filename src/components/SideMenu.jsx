@@ -236,7 +236,7 @@ function SideMenu({ isOpen, onClose }) {
     const menuItems = [
         { path: "/user/", icon: "🏠", label: "Home" },
         { path: "/user/profile", icon: "👤", label: "Profile" },
-        { path: "/user/wallet", icon: "💰", label: "Wallet" },
+        { path: "/user/wallet", icon: "💳", label: "Orbits & Gifts" },
         { path: "/user/redeem", icon: "🎁", label: "Redemption" },
         { path: "/user/store", icon: "🏪", label: "Collaborators" },
     ];

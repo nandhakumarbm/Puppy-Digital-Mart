@@ -230,7 +230,7 @@ function Home() {
         <div style={pageStyle}>
             <ImageCarousel />
             <SectionTitle
-                title="Redeem Your Rewards"
+                title="Gifts for orbits"
                 subtitle="Scan QR codes or enter coupon codes to unlock amazing rewards and earn digital currency"
             />
 

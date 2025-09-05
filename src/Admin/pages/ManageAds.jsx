@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, AlertCircle, CheckCircle, Video, Image, Trash2, Eye, Play } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle, Video, Image, Trash2, Eye, Play, Upload } from 'lucide-react';
 import {
   useCreateAdMutation,
   useGetAllAdsQuery,
@@ -22,7 +22,9 @@ const ManageAds = () => {
     title: '',
     description: '',
     mediaUrl: '',
-    type: 'image'
+    type: 'image',
+    imageFile: null,
+    imagePreviewUrl: null // Add preview URL for display
   });
 
   // UI state
@@ -34,7 +36,36 @@ const ManageAds = () => {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // Create advertisement function
+  // Handle file input change - no base64 conversion
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validImageTypes.includes(file.type)) {
+      showNotification('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+      return;
+    }
+
+    // Validate file size (e.g., max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      showNotification('File size must be less than 5MB', 'error');
+      return;
+    }
+
+    // Create preview URL for display
+    const previewUrl = URL.createObjectURL(file);
+
+    setAdForm(prev => ({
+      ...prev,
+      imageFile: file,
+      imagePreviewUrl: previewUrl
+    }));
+  };
+
+  // Create advertisement function with FormData for image uploads
   const createAdvertisement = async () => {
     // Validation
     if (!adForm.title.trim()) {
@@ -45,35 +76,77 @@ const ManageAds = () => {
       showNotification('Please enter a description', 'error');
       return;
     }
-    if (!adForm.mediaUrl.trim()) {
-      showNotification('Please enter a media URL', 'error');
-      return;
-    }
 
-    // URL validation
-    if (!isValidUrl(adForm.mediaUrl)) {
-      showNotification('Please enter a valid URL', 'error');
-      return;
+    // Different validation based on type
+    if (adForm.type === 'video') {
+      if (!adForm.mediaUrl.trim()) {
+        showNotification('Please enter a video URL', 'error');
+        return;
+      }
+      if (!isValidUrl(adForm.mediaUrl)) {
+        showNotification('Please enter a valid video URL', 'error');
+        return;
+      }
+    } else {
+      if (!adForm.imageFile) {
+        showNotification('Please upload an image', 'error');
+        return;
+      }
     }
 
     try {
-      const adData = {
-        title: adForm.title.trim(),
-        description: adForm.description.trim(),
-        mediaUrl: adForm.mediaUrl.trim(),
-        type: adForm.type,
-        isActive: true // Ensure new ads are active by default
-      };
+      let adData;
 
-      await createAd(adData).unwrap();
+      if (adForm.type === 'image') {
+        // Create FormData for image upload
+        const formData = new FormData();
+        formData.append('type', adForm.type);
+        formData.append('title', adForm.title.trim());
+        formData.append('description', adForm.description.trim());
+        formData.append('image', adForm.imageFile); // Send raw image file
+        
+        // Debug: Log FormData entries
+        console.log('FormData entries:');
+        for (let pair of formData.entries()) {
+          console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File: ${pair[1].name}` : pair[1]));
+        }
+        
+        adData = formData;
+      } else {
+        // For video, send regular JSON data
+        adData = {
+          type: adForm.type,
+          title: adForm.title.trim(),
+          description: adForm.description.trim(),
+          mediaUrl: adForm.mediaUrl
+        };
+        console.log('Video ad data:', adData);
+      }
+
+      const res = await createAd(adData);
+
+      if (res.error) {
+        throw res.error;
+      }
+
+      // Clean up preview URL
+      if (adForm.imagePreviewUrl) {
+        URL.revokeObjectURL(adForm.imagePreviewUrl);
+      }
 
       // Reset form on success
       setAdForm({
         title: '',
         description: '',
         mediaUrl: '',
-        type: 'image'
+        type: 'image',
+        imageFile: null,
+        imagePreviewUrl: null
       });
+
+      // Clear file input
+      const fileInput = document.getElementById('imageUpload');
+      if (fileInput) fileInput.value = '';
 
       showNotification('Advertisement created successfully');
       refetchAds();
@@ -83,13 +156,12 @@ const ManageAds = () => {
     }
   };
 
-  // Soft delete ad function - sets isActive to false instead of deleting
+  // Soft delete ad function
   const handleDeleteAd = async (adId) => {
     try {
-      // Call delete API which should set isActive to false
       await deleteAd({ adId }).unwrap();
       showNotification('Advertisement deactivated successfully');
-      refetchAds(); // This will refresh the list and hide the deactivated ad
+      refetchAds();
       setDeleteConfirm({ show: false, id: '', title: '' });
     } catch (error) {
       const errorMessage = error?.data?.message || error?.message || 'Failed to deactivate advertisement';
@@ -110,6 +182,35 @@ const ManageAds = () => {
       return false;
     }
   };
+
+  // Handle type change - reset media when switching types
+  const handleTypeChange = (newType) => {
+    // Clean up previous preview URL
+    if (adForm.imagePreviewUrl) {
+      URL.revokeObjectURL(adForm.imagePreviewUrl);
+    }
+
+    setAdForm(prev => ({
+      ...prev,
+      type: newType,
+      mediaUrl: '',
+      imageFile: null,
+      imagePreviewUrl: null
+    }));
+
+    // Clear file input
+    const fileInput = document.getElementById('imageUpload');
+    if (fileInput) fileInput.value = '';
+  };
+
+  // Cleanup function for preview URLs
+  React.useEffect(() => {
+    return () => {
+      if (adForm.imagePreviewUrl) {
+        URL.revokeObjectURL(adForm.imagePreviewUrl);
+      }
+    };
+  }, [adForm.imagePreviewUrl]);
 
   return (
     <div style={containerStyle}>
@@ -183,7 +284,7 @@ const ManageAds = () => {
                 <label style={labelStyle}>Media Type *</label>
                 <select
                   value={adForm.type}
-                  onChange={(e) => setAdForm(prev => ({ ...prev, type: e.target.value }))}
+                  onChange={(e) => handleTypeChange(e.target.value)}
                   style={selectStyle}
                 >
                   <option value="image">Image</option>
@@ -202,37 +303,63 @@ const ManageAds = () => {
                 />
               </div>
 
-              <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>
-                  {adForm.type === 'video' ? 'Video URL *' : 'Image URL *'}
-                </label>
-                <input
-                  type="url"
-                  value={adForm.mediaUrl}
-                  onChange={(e) => setAdForm(prev => ({ ...prev, mediaUrl: e.target.value }))}
-                  placeholder={
-                    adForm.type === 'video'
-                      ? "https://www.youtube.com/watch?v=example"
-                      : "https://example.com/image.jpg"
-                  }
-                  style={{
-                    ...inputStyle,
-                    borderColor: adForm.mediaUrl && !isValidUrl(adForm.mediaUrl) ? '#EF4444' : 'var(--input-border)'
-                  }}
-                />
-                {adForm.mediaUrl && !isValidUrl(adForm.mediaUrl) && (
-                  <p style={errorTextStyle}>Please enter a valid URL</p>
-                )}
-              </div>
+              {/* Conditional media input based on type */}
+              {adForm.type === 'image' ? (
+                <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
+                  <label style={labelStyle}>Upload Image *</label>
+                  <div style={fileUploadContainerStyle}>
+                    <input
+                      type="file"
+                      id="imageUpload"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      style={hiddenFileInputStyle}
+                    />
+                    <label htmlFor="imageUpload" style={fileUploadButtonStyle}>
+                      <Upload size={20} />
+                      {adForm.imageFile ? 'Change Image' : 'Choose Image'}
+                    </label>
+                    {adForm.imageFile && (
+                      <div style={fileInfoStyle}>
+                        <Image size={16} />
+                        <span>{adForm.imageFile.name}</span>
+                        <span style={fileSizeStyle}>
+                          ({(adForm.imageFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p style={helpTextStyle}>
+                    Supported formats: JPEG, PNG, GIF, WebP (Max: 5MB)
+                  </p>
+                </div>
+              ) : (
+                <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
+                  <label style={labelStyle}>Video URL *</label>
+                  <input
+                    type="url"
+                    value={adForm.mediaUrl}
+                    onChange={(e) => setAdForm(prev => ({ ...prev, mediaUrl: e.target.value }))}
+                    placeholder="https://www.youtube.com/watch?v=example"
+                    style={{
+                      ...inputStyle,
+                      borderColor: adForm.mediaUrl && !isValidUrl(adForm.mediaUrl) ? '#EF4444' : 'var(--input-border)'
+                    }}
+                  />
+                  {adForm.mediaUrl && !isValidUrl(adForm.mediaUrl) && (
+                    <p style={errorTextStyle}>Please enter a valid URL</p>
+                  )}
+                </div>
+              )}
 
               {/* Media Preview */}
-              {adForm.mediaUrl && isValidUrl(adForm.mediaUrl) && (
+              {((adForm.type === 'image' && adForm.imagePreviewUrl) || (adForm.type === 'video' && adForm.mediaUrl && isValidUrl(adForm.mediaUrl))) && (
                 <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
                   <label style={labelStyle}>Media Preview</label>
                   <div style={previewContainerStyle}>
                     {adForm.type === 'image' ? (
                       <img
-                        src={adForm.mediaUrl}
+                        src={adForm.imagePreviewUrl}
                         alt="Ad preview"
                         style={previewImageStyle}
                         onError={(e) => {
@@ -365,7 +492,6 @@ const ManageAds = () => {
                           View Media
                         </a>
                       </div>
-                      {/* Creation date */}
                       <div style={adDateStyle}>
                         Created: {new Date(ad.createdAt).toLocaleDateString()}
                       </div>
@@ -381,7 +507,7 @@ const ManageAds = () => {
   );
 };
 
-// Existing styles remain the same, adding new ones below...
+// Styles with added spinner animation keyframes
 const containerStyle = {
   backgroundColor: 'var(--background)',
   minHeight: '100vh',
@@ -546,6 +672,55 @@ const primaryButtonStyle = {
   justifyContent: 'center',
   gap: '8px',
   fontFamily: 'var(--font-family)'
+};
+
+const fileUploadContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px'
+};
+
+const hiddenFileInputStyle = {
+  display: 'none'
+};
+
+const fileUploadButtonStyle = {
+  padding: '12px 16px',
+  border: '2px dashed var(--input-border)',
+  borderRadius: '8px',
+  backgroundColor: 'var(--card-background)',
+  color: 'var(--primary-text)',
+  cursor: 'pointer',
+  textAlign: 'center',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  fontSize: '14px',
+  fontWeight: '500'
+};
+
+const fileInfoStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '8px 12px',
+  backgroundColor: '#F3F4F6',
+  borderRadius: '6px',
+  fontSize: '14px',
+  color: 'var(--primary-text)'
+};
+
+const fileSizeStyle = {
+  color: 'var(--secondary-text)',
+  fontSize: '12px'
+};
+
+const helpTextStyle = {
+  fontSize: '12px',
+  color: 'var(--secondary-text)',
+  fontStyle: 'italic'
 };
 
 const errorTextStyle = {
@@ -714,7 +889,6 @@ const adLinkStyle = {
   fontWeight: '500'
 };
 
-// New styles for active status indicators
 const headerStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -787,4 +961,4 @@ const adDateStyle = {
   fontStyle: 'italic'
 };
 
-export default ManageAds;
+export default ManageAds; 
