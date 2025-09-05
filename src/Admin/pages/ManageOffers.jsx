@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, AlertCircle, CheckCircle, Gift, Trash2, Eye } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle, Gift, Trash2, Eye, Upload, Image } from 'lucide-react';
 import {
     useCreateOfferMutation,
     useGetAllOffersQuery,
@@ -20,7 +20,8 @@ const ManageOffers = () => {
         title: '',
         description: '',
         orbitCost: '',
-        imageUrl: ''
+        imageFile: null,
+        imagePreviewUrl: null
     });
 
     // UI state
@@ -30,6 +31,35 @@ const ManageOffers = () => {
     const showNotification = (message, type = 'success') => {
         setNotification({ message, type });
         setTimeout(() => setNotification(null), 4000);
+    };
+
+    // Handle file input change - same validation as ManageAds
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validImageTypes.includes(file.type)) {
+            showNotification('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+            return;
+        }
+
+        // Validate file size (e.g., max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            showNotification('File size must be less than 5MB', 'error');
+            return;
+        }
+
+        // Create preview URL for display
+        const previewUrl = URL.createObjectURL(file);
+
+        setOfferForm(prev => ({
+            ...prev,
+            imageFile: file,
+            imagePreviewUrl: previewUrl
+        }));
     };
 
     // Create offer function
@@ -47,34 +77,46 @@ const ManageOffers = () => {
             showNotification('Please enter a valid orbit cost', 'error');
             return;
         }
-        if (!offerForm.imageUrl.trim()) {
-            showNotification('Please enter an image URL', 'error');
-            return;
-        }
-
-        // URL validation
-        if (!isValidUrl(offerForm.imageUrl)) {
-            showNotification('Please enter a valid image URL', 'error');
+        if (!offerForm.imageFile) {
+            showNotification('Please upload an image', 'error');
             return;
         }
 
         try {
-            const offerData = {
-                title: offerForm.title.trim(),
-                description: offerForm.description.trim(),
-                orbitCost: parseFloat(offerForm.orbitCost),
-                imageUrl: offerForm.imageUrl.trim()
-            };
+            // Build FormData for file upload
+            const formData = new FormData();
+            formData.append('title', offerForm.title.trim());
+            formData.append('description', offerForm.description.trim());
+            formData.append('orbitCost', parseFloat(offerForm.orbitCost));
+            formData.append('imageUrl', offerForm.imageFile); // backend expects upload.single("imageUrl")
 
-            await createOffer(offerData).unwrap();
+            console.log('FormData entries:');
+            for (let pair of formData.entries()) {
+                console.log(
+                    pair[0] + ': ' + 
+                    (pair[1] instanceof File ? `File: ${pair[1].name}` : pair[1])
+                );
+            }
+
+            await createOffer(formData).unwrap();
+
+            // Clean up preview URL
+            if (offerForm.imagePreviewUrl) {
+                URL.revokeObjectURL(offerForm.imagePreviewUrl);
+            }
 
             // Reset form on success
             setOfferForm({
                 title: '',
                 description: '',
                 orbitCost: '',
-                imageUrl: ''
+                imageFile: null,
+                imagePreviewUrl: null
             });
+
+            // Clear file input
+            const fileInput = document.getElementById('imageUpload');
+            if (fileInput) fileInput.value = '';
 
             showNotification('Offer created successfully');
             refetchOffers();
@@ -88,7 +130,6 @@ const ManageOffers = () => {
     const handleDeleteOffer = async (offerId) => {
         try {
             const res = await deleteOffer({ offerId }).unwrap();
-
             console.log(res);
             showNotification('Offer deleted successfully');
             refetchOffers();
@@ -104,14 +145,14 @@ const ManageOffers = () => {
         setDeleteConfirm({ show: true, id, title });
     };
 
-    const isValidUrl = (string) => {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
-    };
+    // Cleanup function for preview URLs
+    React.useEffect(() => {
+        return () => {
+            if (offerForm.imagePreviewUrl) {
+                URL.revokeObjectURL(offerForm.imagePreviewUrl);
+            }
+        };
+    }, [offerForm.imagePreviewUrl]);
 
     return (
         <div style={containerStyle}>
@@ -204,30 +245,43 @@ const ManageOffers = () => {
                                 />
                             </div>
 
+                            {/* File Upload - Using ManageAds design */}
                             <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
-                                <label style={labelStyle}>Image URL *</label>
-                                <input
-                                    type="url"
-                                    value={offerForm.imageUrl}
-                                    onChange={(e) => setOfferForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                                    placeholder="https://example.com/image.jpg"
-                                    style={{
-                                        ...inputStyle,
-                                        borderColor: offerForm.imageUrl && !isValidUrl(offerForm.imageUrl) ? '#EF4444' : 'var(--input-border)'
-                                    }}
-                                />
-                                {offerForm.imageUrl && !isValidUrl(offerForm.imageUrl) && (
-                                    <p style={errorTextStyle}>Please enter a valid URL</p>
-                                )}
+                                <label style={labelStyle}>Upload Image *</label>
+                                <div style={fileUploadContainerStyle}>
+                                    <input
+                                        type="file"
+                                        id="imageUpload"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        style={hiddenFileInputStyle}
+                                    />
+                                    <label htmlFor="imageUpload" style={fileUploadButtonStyle}>
+                                        <Upload size={20} />
+                                        {offerForm.imageFile ? 'Change Image' : 'Choose Image'}
+                                    </label>
+                                    {offerForm.imageFile && (
+                                        <div style={fileInfoStyle}>
+                                            <Image size={16} />
+                                            <span>{offerForm.imageFile.name}</span>
+                                            <span style={fileSizeStyle}>
+                                                ({(offerForm.imageFile.size / 1024 / 1024).toFixed(2)} MB)
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                <p style={helpTextStyle}>
+                                    Supported formats: JPEG, PNG, GIF, WebP (Max: 5MB)
+                                </p>
                             </div>
 
                             {/* Image Preview */}
-                            {offerForm.imageUrl && isValidUrl(offerForm.imageUrl) && (
+                            {offerForm.imagePreviewUrl && (
                                 <div style={{ ...inputGroupStyle, gridColumn: '1 / -1' }}>
                                     <label style={labelStyle}>Image Preview</label>
                                     <div style={previewContainerStyle}>
                                         <img
-                                            src={offerForm.imageUrl}
+                                            src={offerForm.imagePreviewUrl}
                                             alt="Offer preview"
                                             style={previewImageStyle}
                                             onError={(e) => {
@@ -274,7 +328,7 @@ const ManageOffers = () => {
                             </h2>
                             <div style={showingActiveStyle}>
                                 <span style={activeIndicatorStyle}>●</span>
-                                Showing only active ads
+                                Showing only active offers
                             </div>
                         </div>
 
@@ -284,10 +338,10 @@ const ManageOffers = () => {
                             <div style={emptyStateStyle}>
                                 <Gift size={48} style={{ color: 'var(--secondary-text)' }} />
                                 <p>No active offers found</p>
-                                <p style={{ fontSize: '14px', marginTop: '8px' }}>
+                                <p style={emptySubtextStyle}>
                                     {allOffers.length > 0 ?
-                                        `${allOffers.length} total offers, but none are active` :
-                                        'No offers created yet'
+                                        `${allOffers.length} inactive offer(s) are hidden` :
+                                        'Create your first offer above'
                                     }
                                 </p>
                             </div>
@@ -330,349 +384,101 @@ const ManageOffers = () => {
     );
 };
 
-// Styles remain the same...
-const containerStyle = {
-    backgroundColor: 'var(--background)',
-    minHeight: '100vh',
-    padding: '24px',
-    fontFamily: 'var(--font-family)'
-};
+// Updated styles - including new styles from ManageAds
+const containerStyle = { backgroundColor: 'var(--background)', minHeight: '100vh', padding: '24px', fontFamily: 'var(--font-family)' };
+const maxWidthStyle = { maxWidth: '1200px', margin: '0 auto' };
+const notificationStyle = { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '8px', border: '1px solid', marginBottom: '24px', fontSize: '14px', fontWeight: '500' };
+const modalOverlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
+const modalStyle = { backgroundColor: 'var(--card-background)', borderRadius: '12px', padding: '24px', maxWidth: '400px', width: '90%', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)' };
+const modalTitleStyle = { fontSize: '18px', fontWeight: '600', color: 'var(--primary-text)', margin: '0 0 12px 0' };
+const modalTextStyle = { fontSize: '14px', color: 'var(--secondary-text)', margin: '0 0 20px 0', lineHeight: '1.5' };
+const modalButtonsStyle = { display: 'flex', gap: '12px', justifyContent: 'flex-end' };
+const cancelButtonStyle = { padding: '8px 16px', border: '1px solid var(--card-border)', borderRadius: '6px', backgroundColor: 'var(--card-background)', color: 'var(--secondary-text)', cursor: 'pointer', fontSize: '14px' };
+const deleteButtonStyle = { padding: '8px 16px', border: 'none', borderRadius: '6px', backgroundColor: '#EF4444', color: 'white', cursor: 'pointer', fontSize: '14px' };
+const cardStyle = { backgroundColor: 'var(--card-background)', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: '1px solid var(--card-border)', marginBottom: '24px' };
+const contentStyle = { padding: '32px' };
+const sectionTitleStyle = { fontSize: '20px', fontWeight: '600', color: 'var(--primary-text)', margin: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: '8px' };
+const formGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' };
+const inputGroupStyle = { display: 'flex', flexDirection: 'column', gap: '8px' };
+const labelStyle = { fontSize: '14px', fontWeight: '500', color: 'var(--primary-text)' };
+const inputStyle = { padding: '12px 16px', border: '1px solid var(--input-border)', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease', fontFamily: 'var(--font-family)', backgroundColor: 'var(--card-background)', color: 'var(--primary-text)' };
+const textareaStyle = { ...inputStyle, resize: 'vertical', minHeight: '80px' };
+const primaryButtonStyle = { backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', padding: '14px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: 'var(--font-family)' };
 
-const maxWidthStyle = {
-    maxWidth: '1200px',
-    margin: '0 auto'
-};
-
-const notificationStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '16px',
-    borderRadius: '8px',
-    border: '1px solid',
-    marginBottom: '24px',
-    fontSize: '14px',
-    fontWeight: '500'
-};
-
-const modalOverlayStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000
-};
-
-const modalStyle = {
-    backgroundColor: 'var(--card-background)',
-    borderRadius: '12px',
-    padding: '24px',
-    maxWidth: '400px',
-    width: '90%',
-    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-};
-
-const modalTitleStyle = {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: 'var(--primary-text)',
-    margin: '0 0 12px 0'
-};
-
-const modalTextStyle = {
-    fontSize: '14px',
-    color: 'var(--secondary-text)',
-    margin: '0 0 20px 0',
-    lineHeight: '1.5'
-};
-
-const modalButtonsStyle = {
-    display: 'flex',
-    gap: '12px',
-    justifyContent: 'flex-end'
-};
-
-const cancelButtonStyle = {
-    padding: '8px 16px',
-    border: '1px solid var(--card-border)',
-    borderRadius: '6px',
-    backgroundColor: 'var(--card-background)',
-    color: 'var(--secondary-text)',
-    cursor: 'pointer',
-    fontSize: '14px'
-};
-
-const deleteButtonStyle = {
-    padding: '8px 16px',
-    border: 'none',
-    borderRadius: '6px',
-    backgroundColor: '#EF4444',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '14px'
-};
-
-const cardStyle = {
-    backgroundColor: 'var(--card-background)',
-    borderRadius: '16px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-    border: '1px solid var(--card-border)',
-    marginBottom: '24px'
-};
-
-const contentStyle = {
-    padding: '32px'
-};
-
-const sectionTitleStyle = {
-    fontSize: '20px',
-    fontWeight: '600',
-    color: 'var(--primary-text)',
-    margin: '0 0 24px 0',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-};
-
-const formGridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '20px'
-};
-
-const inputGroupStyle = {
+// New file upload styles from ManageAds
+const fileUploadContainerStyle = {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    gap: '12px'
 };
 
-const labelStyle = {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: 'var(--primary-text)'
+const hiddenFileInputStyle = {
+    display: 'none'
 };
 
-const inputStyle = {
+const fileUploadButtonStyle = {
     padding: '12px 16px',
-    border: '1px solid var(--input-border)',
+    border: '2px dashed var(--input-border)',
     borderRadius: '8px',
-    fontSize: '14px',
-    outline: 'none',
-    transition: 'border-color 0.2s ease',
-    fontFamily: 'var(--font-family)',
     backgroundColor: 'var(--card-background)',
-    color: 'var(--primary-text)'
-};
-
-const textareaStyle = {
-    ...inputStyle,
-    resize: 'vertical',
-    minHeight: '80px'
-};
-
-const primaryButtonStyle = {
-    backgroundColor: 'var(--accent-primary)',
-    color: 'white',
-    border: 'none',
-    padding: '14px 24px',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: '500',
+    color: 'var(--primary-text)',
     cursor: 'pointer',
+    textAlign: 'center',
     transition: 'all 0.2s ease',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    fontFamily: 'var(--font-family)'
-};
-
-const errorTextStyle = {
-    fontSize: '12px',
-    color: '#EF4444',
-    margin: '4px 0 0 0'
-};
-
-const previewContainerStyle = {
-    border: '1px solid var(--card-border)',
-    borderRadius: '8px',
-    overflow: 'hidden',
-    backgroundColor: '#f9f9f9'
-};
-
-const previewImageStyle = {
-    width: '100%',
-    maxHeight: '200px',
-    objectFit: 'cover',
-    display: 'block'
-};
-
-const spinnerStyle = {
-    width: '16px',
-    height: '16px',
-    border: '2px solid transparent',
-    borderTop: '2px solid currentColor',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite'
-};
-
-const loadingStyle = {
-    textAlign: 'center',
-    padding: '40px',
-    color: 'var(--secondary-text)'
-};
-
-const emptyStateStyle = {
-    textAlign: 'center',
-    padding: '60px 20px',
-    color: 'var(--secondary-text)'
-};
-
-const offersGridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '20px'
-};
-
-const offerCardStyle = {
-    border: '1px solid var(--card-border)',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    backgroundColor: 'var(--background)',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-};
-
-const offerImageContainerStyle = {
-    height: '160px',
-    overflow: 'hidden',
-    position: 'relative'
-};
-
-const activeBadgeStyle = {
-    position: 'absolute',
-    top: '12px',
-    left: '12px',
-    backgroundColor: '#10B981',
-    borderRadius: '16px',
-    padding: '4px 12px',
-    zIndex: 2
-};
-
-const activeBadgeTextStyle = {
-    color: 'white',
-    fontSize: '12px',
-    fontWeight: '600'
-};
-
-const sectionHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-    flexWrap: 'wrap',
-    gap: '16px'
-};
-
-const showingActiveStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
     fontSize: '14px',
-    color: '#10B981',
-    backgroundColor: '#ECFDF5',
-    padding: '6px 12px',
-    borderRadius: '20px',
-    border: '1px solid #D1FAE5'
-};
-
-const activeIndicatorStyle = {
-    color: '#10B981',
-    fontSize: '8px'
-};
-
-const offerActionsStyle = {
-    borderTop: '1px solid var(--card-border)',
-    paddingTop: '12px',
-    marginTop: '12px'
-};
-
-const actionButtonsStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: '8px'
-};
-
-const viewMediaButtonStyle = {
-    padding: '6px 12px',
-    border: 'none',
-    borderRadius: '6px',
-    backgroundColor: '#EBF4FF',
-    color: '#3B82F6',
-    cursor: 'pointer',
-    fontSize: '12px',
     fontWeight: '500'
 };
 
-const createdDateStyle = {
+const fileInfoStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: '#F3F4F6',
+    borderRadius: '6px',
+    fontSize: '14px',
+    color: 'var(--primary-text)'
+};
+
+const fileSizeStyle = {
+    color: 'var(--secondary-text)',
+    fontSize: '12px'
+};
+
+const helpTextStyle = {
     fontSize: '12px',
     color: 'var(--secondary-text)',
-    margin: '8px 0 0 0',
     fontStyle: 'italic'
 };
 
-const offerImageStyle = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover'
-};
+const previewContainerStyle = { border: '1px solid var(--card-border)', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f9f9f9' };
+const previewImageStyle = { width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' };
+const spinnerStyle = { width: '16px', height: '16px', border: '2px solid transparent', borderTop: '2px solid currentColor', borderRadius: '50%', animation: 'spin 1s linear infinite' };
+const loadingStyle = { textAlign: 'center', padding: '40px', color: 'var(--secondary-text)' };
+const emptyStateStyle = { textAlign: 'center', padding: '60px 20px', color: 'var(--secondary-text)' };
+const offersGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' };
+const offerCardStyle = { border: '1px solid var(--card-border)', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--background)', transition: 'transform 0.2s ease, box-shadow 0.2s ease' };
+const offerImageContainerStyle = { height: '160px', overflow: 'hidden', position: 'relative' };
+const sectionHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' };
+const showingActiveStyle = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#10B981', backgroundColor: '#ECFDF5', padding: '6px 12px', borderRadius: '20px', border: '1px solid #D1FAE5' };
+const activeIndicatorStyle = { color: '#10B981', fontSize: '8px' };
+const offerImageStyle = { width: '100%', height: '100%', objectFit: 'cover' };
+const offerContentStyle = { padding: '16px' };
+const offerTitleStyle = { fontSize: '16px', fontWeight: '600', color: 'var(--primary-text)', margin: '0 0 8px 0' };
+const offerDescriptionStyle = { fontSize: '14px', color: 'var(--secondary-text)', margin: '0 0 12px 0', lineHeight: '1.4' };
+const offerMetaStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+const offerCostStyle = { fontSize: '14px', fontWeight: '600', color: 'var(--accent-primary)' };
+const deleteOfferButtonStyle = { padding: '6px', border: 'none', borderRadius: '6px', backgroundColor: '#FEE2E2', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease' };
 
-const offerContentStyle = {
-    padding: '16px'
-};
-
-const offerTitleStyle = {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: 'var(--primary-text)',
-    margin: '0 0 8px 0'
-};
-
-const offerDescriptionStyle = {
-    fontSize: '14px',
+const emptySubtextStyle = {
+    fontSize: '12px',
     color: 'var(--secondary-text)',
-    margin: '0 0 12px 0',
-    lineHeight: '1.4'
-};
-
-const offerMetaStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-};
-
-const offerCostStyle = {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: 'var(--accent-primary)'
-};
-
-const deleteOfferButtonStyle = {
-    padding: '6px',
-    border: 'none',
-    borderRadius: '6px',
-    backgroundColor: '#FEE2E2',
-    color: '#DC2626',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'background-color 0.2s ease'
+    marginTop: '8px',
+    fontStyle: 'italic'
 };
 
 export default ManageOffers;

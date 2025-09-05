@@ -98,30 +98,31 @@ const ManageAds = () => {
       let adData;
 
       if (adForm.type === 'image') {
-        // Create FormData for image upload
         const formData = new FormData();
         formData.append('type', adForm.type);
         formData.append('title', adForm.title.trim());
         formData.append('description', adForm.description.trim());
-        formData.append('image', adForm.imageFile); // Send raw image file
-        
-        // Debug: Log FormData entries
+        formData.append('mediaUrl', adForm.imageFile); // ✅ must match multer.single("mediaUrl")
+      
         console.log('FormData entries:');
         for (let pair of formData.entries()) {
-          console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File: ${pair[1].name}` : pair[1]));
+          console.log(
+            pair[0] + ': ' + 
+            (pair[1] instanceof File ? `File: ${pair[1].name}` : pair[1])
+          );
         }
-        
+      
         adData = formData;
       } else {
-        // For video, send regular JSON data
         adData = {
           type: adForm.type,
           title: adForm.title.trim(),
           description: adForm.description.trim(),
-          mediaUrl: adForm.mediaUrl
+          mediaUrl: adForm.mediaUrl, // ✅ for videos, backend expects string URL
         };
         console.log('Video ad data:', adData);
       }
+      
 
       const res = await createAd(adData);
 

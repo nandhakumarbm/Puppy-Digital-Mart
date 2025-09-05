@@ -5,11 +5,20 @@ export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
     baseUrl: "https://api.puppydigitalmart.com/",
-    prepareHeaders: (headers) => {
+    prepareHeaders: (headers, { endpoint }) => {
       const token = localStorage.getItem("PuppyToken");
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
+      
+      // Don't set Content-Type for FormData - let the browser handle it
+      // This is important for file uploads with multipart/form-data boundary
+      const formDataEndpoints = ['createOffer', 'createAd', 'createStore'];
+      if (formDataEndpoints.includes(endpoint)) {
+        // Remove any existing Content-Type header to let browser set it automatically
+        headers.delete('Content-Type');
+      }
+      
       return headers;
     },
   }),
@@ -62,12 +71,12 @@ export const apiSlice = createApi({
       }),
     }),
     createStore: builder.mutation({
-      query: (data) => ({
-        url: "/store/store",
-        method: "POST",
-        body: data,
+      query: (formData) => ({
+        url: '/store/store',
+        method: 'POST',
+        body: formData,
       }),
-    }),
+    }),    
     editStore: builder.mutation({
       query: (data) => ({
         url: "/store/store",
@@ -100,12 +109,16 @@ export const apiSlice = createApi({
 
     // ===== OFFERS =====
     createOffer: builder.mutation({
-      query: (data) => ({
-        url: "/offers/offers",
-        method: "POST",
-        body: data,
-      }),
+      query: (formData) => {
+        console.log('RTK Query - Creating offer with FormData:', formData instanceof FormData);
+        return {
+          url: "/offers/offers",
+          method: "POST",
+          body: formData, // This will be FormData with file
+        };
+      },
     }),
+    
     getAllOffers: builder.query({
       query: () => "/offers/offers",
     }),
@@ -121,13 +134,6 @@ export const apiSlice = createApi({
     generateCoupon: builder.mutation({
       query: (data) => ({
         url: "/coupon/generate",
-        method: "POST",
-        body: data,
-      }),
-    }),
-    redeemCoupon: builder.mutation({
-      query: (data) => ({
-        url: "/coupon/redeem",
         method: "POST",
         body: data,
       }),
@@ -156,12 +162,16 @@ export const apiSlice = createApi({
 
     // ===== ADS =====
     createAd: builder.mutation({
-      query: (data) => ({
-        url: "/ad/ad",
-        method: "POST",
-        body: data,
-      }),
-    }),
+      query: (data) => {
+        console.log('RTK Query - Creating ad with data type:', data instanceof FormData ? 'FormData' : 'JSON');
+        return {
+          url: "/ad/ad",
+          method: "POST",
+          body: data, // Can be FormData (for images) or JSON (for videos)
+        };
+      },
+    }),    
+
     getAllAds: builder.query({
       query: () => "/ad/ad",
     }),
