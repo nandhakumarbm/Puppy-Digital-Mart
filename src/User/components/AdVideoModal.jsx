@@ -351,7 +351,7 @@ const AdVideoModal = ({ open, onClose, onComplete, adData, orbitValue }) => {
                             fontFamily: 'var(--font-family)',
                         }}
                     >
-                        Orbits Earned
+                        Orbits gifts
                     </Typography>
                 </Box>
 
