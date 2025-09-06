@@ -615,7 +615,7 @@ const WalletPage = () => {
 
             {/* Rewards Section */}
             <div>
-                <h2 style={sectionTitle}>Redeem Rewards</h2>
+                <h2 style={sectionTitle}>Select gift by orbits</h2>
 
                 {rewards.length === 0 ? (
                     <div style={noOffersStyle}>

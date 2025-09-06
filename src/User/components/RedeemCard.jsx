@@ -130,7 +130,7 @@ function RedeemCard({ readyToRedeem, handleRedeem, appliedCoupon, qrData, isLoad
                         </>
                     ) : (
                         <>
-                            🎁 Redeem Reward
+                            🎁 Redeem Orbits
                         </>
                     )}
                 </button>

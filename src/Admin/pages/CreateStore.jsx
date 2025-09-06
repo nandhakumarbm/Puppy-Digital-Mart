@@ -34,7 +34,7 @@ const CreateStore = () => {
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07)',
       border: '1px solid #E5E7EB',
       width: '100%',
-      maxWidth: '500px'
+      maxWidth: '1000px'
     },
     title: {
       fontSize: '28px',

@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearAuth, getUser } from "../utils/auth";
 
 function SideMenu({ isOpen, onClose }) {
     const navigate = useNavigate();
     const user = getUser();
-    // Changed to store only the currently expanded group (single value instead of object)
     const [expandedGroup, setExpandedGroup] = useState(null);
 
     const styles = {
@@ -91,39 +90,35 @@ function SideMenu({ isOpen, onClose }) {
             flexDirection: "column",
             flexGrow: 1,
         },
-        menuItem: {
+        // Base button style that all menu items inherit
+        baseMenuItem: {
             display: "flex",
             alignItems: "center",
-            padding: "12px 20px",
-            color: "#374151",
             background: "transparent",
             border: "none",
-            fontSize: "16px",
-            fontWeight: "500",
             cursor: "pointer",
             transition: "all 0.2s ease",
             textAlign: "left",
-            gap: "14px",
             position: "relative",
-            minHeight: "48px",
             WebkitTapHighlightColor: "transparent",
+            width: "100%",
+            outline: "none",
         },
-        groupItem: {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+        menuItem: {
             padding: "12px 20px",
             color: "#374151",
-            background: "none",
-            border: "none",
+            fontSize: "16px",
+            fontWeight: "500",
+            gap: "14px",
+            minHeight: "48px",
+        },
+        groupItem: {
+            padding: "12px 20px",
+            color: "#374151",
             fontSize: "16px",
             fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            textAlign: "left",
-            position: "relative",
             minHeight: "48px",
-            WebkitTapHighlightColor: "transparent",
+            justifyContent: "space-between",
         },
         groupHeader: {
             display: "flex",
@@ -134,28 +129,20 @@ function SideMenu({ isOpen, onClose }) {
             fontSize: "12px",
             transition: "transform 0.2s ease",
             color: "#6b7280",
+            flexShrink: 0,
         },
         subMenuItem: {
-            display: "flex",
-            alignItems: "center",
             padding: "10px 20px 10px 54px",
             color: "#6b7280",
-            background: "transparent",
-            border: "none",
             fontSize: "14px",
             fontWeight: "500",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            textAlign: "left",
             gap: "12px",
-            position: "relative",
             minHeight: "44px",
-            WebkitTapHighlightColor: "transparent",
         },
         subMenuContainer: {
             backgroundColor: "#f9fafb",
             overflow: "hidden",
-            transition: "max-height 0.3s ease",
+            transition: "max-height 0.3s ease-out",
         },
         logoutContainer: {
             borderTop: "1px solid #f3f4f6",
@@ -167,17 +154,10 @@ function SideMenu({ isOpen, onClose }) {
             zIndex: 2,
         },
         logoutItem: {
-            display: "flex",
-            alignItems: "center",
             padding: "16px 20px",
             color: "#dc2626",
-            background: "transparent",
-            border: "none",
             fontSize: "16px",
             fontWeight: "500",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            textAlign: "left",
             gap: "14px",
             minHeight: "48px",
             width: "100%",
@@ -188,6 +168,7 @@ function SideMenu({ isOpen, onClose }) {
             background: "#f3f4f6",
             margin: "2px 20px",
         },
+        // Border indicators
         activeBorder: {
             position: "absolute",
             left: 0,
@@ -221,16 +202,64 @@ function SideMenu({ isOpen, onClose }) {
         }
     };
 
-    // Updated toggle function to handle single dropdown logic
     const toggleGroup = (groupKey) => {
-        setExpandedGroup(prev => {
-            // If clicking the same group that's already open, close it
-            if (prev === groupKey) {
-                return null;
+        setExpandedGroup(prev => prev === groupKey ? null : groupKey);
+    };
+
+    // Enhanced hover handlers
+    const handleItemHover = (e, isEntering, borderColor = "#667eea") => {
+        const button = e.currentTarget;
+        const border = button.querySelector('[data-border]');
+        
+        if (isEntering) {
+            button.style.backgroundColor = "#f3f4f6";
+            if (border) {
+                border.style.width = "4px";
             }
-            // Otherwise, open the clicked group (this automatically closes any other open group)
-            return groupKey;
-        });
+        } else {
+            button.style.backgroundColor = "transparent";
+            if (border) {
+                border.style.width = "0px";
+            }
+        }
+    };
+
+    const handleSubItemHover = (e, isEntering) => {
+        const button = e.currentTarget;
+        const border = button.querySelector('[data-border]');
+        
+        if (isEntering) {
+            button.style.backgroundColor = "#f3f4f6";
+            button.style.color = "#374151";
+            if (border) {
+                border.style.width = "4px";
+            }
+        } else {
+            button.style.backgroundColor = "transparent";
+            button.style.color = "#6b7280";
+            if (border) {
+                border.style.width = "0px";
+            }
+        }
+    };
+
+    const handleLogoutHover = (e, isEntering) => {
+        const button = e.currentTarget;
+        const border = button.querySelector('[data-border]');
+        
+        if (isEntering) {
+            button.style.backgroundColor = "#fef2f2";
+            button.style.width = "100%";
+            if (border) {
+                border.style.width = "4px";
+            }
+        } else {
+            button.style.backgroundColor = "transparent";
+            button.style.width = "100%";
+            if (border) {
+                border.style.width = "0px";
+            }
+        }
     };
 
     const menuItems = [
@@ -238,7 +267,7 @@ function SideMenu({ isOpen, onClose }) {
         { path: "/user/profile", icon: "👤", label: "Profile" },
         { path: "/user/wallet", icon: "💳", label: "Orbits & Gifts" },
         { path: "/user/redeem", icon: "🎁", label: "Redemption" },
-        { path: "/user/store", icon: "🏪", label: "Collaborators" },
+        { path: "/user/store", icon: "🏪", label: "Stores" },
     ];
 
     const adminMenuStructure = [
@@ -270,21 +299,19 @@ function SideMenu({ isOpen, onClose }) {
 
     const renderMenuItem = (item, index, isLast) => {
         if (item.type === "group") {
-            // Check if this specific group is expanded
             const isExpanded = expandedGroup === item.key;
             return (
                 <React.Fragment key={item.key}>
                     <button
-                        style={styles.groupItem}
+                        style={{
+                            ...styles.baseMenuItem,
+                            ...styles.groupItem,
+                        }}
                         onClick={() => toggleGroup(item.key)}
-                        onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "#f3f4f6";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "transparent";
-                        }}
+                        onMouseEnter={(e) => handleItemHover(e, true)}
+                        onMouseLeave={(e) => handleItemHover(e, false)}
                     >
-                        <div style={styles.activeBorder}></div>
+                        <div style={styles.activeBorder} data-border></div>
                         <div style={styles.groupHeader}>
                             <span>{item.icon}</span>
                             <span>{item.label}</span>
@@ -305,21 +332,18 @@ function SideMenu({ isOpen, onClose }) {
                             maxHeight: isExpanded ? `${item.items.length * 44}px` : "0px"
                         }}
                     >
-                        {item.items.map((subItem, subIndex) => (
+                        {item.items.map((subItem) => (
                             <button
                                 key={subItem.path}
-                                style={styles.subMenuItem}
+                                style={{
+                                    ...styles.baseMenuItem,
+                                    ...styles.subMenuItem,
+                                }}
                                 onClick={() => handleNavigate(subItem.path)}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = "#f3f4f6";
-                                    e.target.style.color = "#374151";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = "transparent";
-                                    e.target.style.color = "#6b7280";
-                                }}
+                                onMouseEnter={(e) => handleSubItemHover(e, true)}
+                                onMouseLeave={(e) => handleSubItemHover(e, false)}
                             >
-                                <div style={styles.activeBorder}></div>
+                                <div style={styles.activeBorder} data-border></div>
                                 <span>{subItem.icon}</span>
                                 <span>{subItem.label}</span>
                             </button>
@@ -333,18 +357,15 @@ function SideMenu({ isOpen, onClose }) {
             return (
                 <React.Fragment key={item.path}>
                     <button
-                        style={styles.menuItem}
+                        style={{
+                            ...styles.baseMenuItem,
+                            ...styles.menuItem,
+                        }}
                         onClick={() => handleNavigate(item.path)}
-                        onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "#f3f4f6";
-                            e.target.querySelector('div[style*="width: 0px"]').style.width = "4px";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "transparent";
-                            e.target.querySelector('div[style*="width: 0px"], div[style*="width: 4px"]').style.width = "0px";
-                        }}
+                        onMouseEnter={(e) => handleItemHover(e, true)}
+                        onMouseLeave={(e) => handleItemHover(e, false)}
                     >
-                        <div style={styles.activeBorder}></div>
+                        <div style={styles.activeBorder} data-border></div>
                         <span>{item.icon}</span>
                         <span>{item.label}</span>
                     </button>
@@ -356,7 +377,8 @@ function SideMenu({ isOpen, onClose }) {
 
     const itemsToShow = user?.role === "admin" ? adminMenuStructure : menuItems;
 
-    React.useEffect(() => {
+    // Body scroll lock effect
+    useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = "hidden";
             document.body.style.position = "fixed";
@@ -374,7 +396,7 @@ function SideMenu({ isOpen, onClose }) {
     }, [isOpen]);
 
     // Reset expanded group when menu closes
-    React.useEffect(() => {
+    useEffect(() => {
         if (!isOpen) {
             setExpandedGroup(null);
         }
@@ -400,18 +422,15 @@ function SideMenu({ isOpen, onClose }) {
 
                     <div style={styles.logoutContainer}>
                         <button
-                            style={styles.logoutItem}
+                            style={{
+                                ...styles.baseMenuItem,
+                                ...styles.logoutItem,
+                            }}
                             onClick={handleLogout}
-                            onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = "#fef2f2";
-                                e.target.querySelector('div[style*="width: 0px"]').style.width = "4px";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = "transparent";
-                                e.target.querySelector('div[style*="width: 0px"], div[style*="width: 4px"]').style.width = "0px";
-                            }}
+                            onMouseEnter={(e) => handleLogoutHover(e, true)}
+                            onMouseLeave={(e) => handleLogoutHover(e, false)}
                         >
-                            <div style={styles.logoutBorder}></div>
+                            <div style={styles.logoutBorder} data-border></div>
                             <span>🚪</span>
                             <span>Logout</span>
                         </button>

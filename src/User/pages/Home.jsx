@@ -14,7 +14,6 @@ import { useDispatch } from "react-redux";
 import { updateWalletBalance } from "../../Slices/authSlice";
 import Modal from "../components/Modal";
 import ImprovedDevCredits from "../components/ImprovedDevCredits";
-import LocationCard from "../components/LocationCard";
 
 function Home() {
     const [couponInput, setCouponInput] = useState("");
@@ -101,7 +100,7 @@ function Home() {
                 showAlert(errorMessage, "error", 4000);
             }
         } catch (error) {
-            console.error('Coupon validation failed:', error);
+            console.error('Coupon validation failed:');
 
             let errorMessage = 'Failed to validate coupon. Please try again.';
 
@@ -181,15 +180,12 @@ function Home() {
                 setShowResultModal(true);
 
                 // Update wallet balance by adding the earned amount to current balance
-                const currentBalance = walletBalance || 0;
-                const earnedAmount = response.balance || 0;
-                const newBalance = currentBalance + earnedAmount;
+                const newBalance = response.balance || 0;
 
                 dispatch(updateWalletBalance(newBalance));
 
                 // Log successful redemption
-                console.log('Reward redemption successful:', response);
-                console.log(`Balance updated: ${currentBalance} + ${earnedAmount} = ${newBalance}`);
+                console.log('Reward redemption successful:');
             } else {
                 showAlert("Failed to redeem reward. Please try again.", "error", 3000);
                 setPendingRedemption(null);
@@ -231,7 +227,7 @@ function Home() {
             <ImageCarousel />
             <SectionTitle
                 title="Gifts for orbits"
-                subtitle="Scan QR codes or enter coupon codes to unlock amazing rewards and earn digital currency"
+                subtitle="Scan QR codes or enter coupon codes to get your gift orbits"
             />
 
             <SelectAction onSelect={setModalType} />
@@ -246,7 +242,7 @@ function Home() {
 
             <Modal isOpen={modalType} onClose={closeModal}>
                 {modalType === "qr" && (
-                    <QRScannerCard qrData={qrData} setQrData={setQrData} />
+                    <QRScannerCard qrData=  {qrData} setQrData={setQrData} />
                 )}
                 {modalType === "coupon" && (
                     <CouponInputCard
@@ -270,7 +266,7 @@ function Home() {
                 onClose={handleAdVideoClose}
                 onComplete={handleAdVideoComplete}
                 adData={adData}
-                orbitValue ={ordbitValue}
+                orbitValue={ordbitValue}
             />
 
             {/* MUI Alert Snackbar */}

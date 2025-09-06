@@ -1,25 +1,23 @@
 import { Mail, Phone, Code, Users } from "lucide-react";
 
 export default function ImprovedDevCredits({ redemptions = [1] }) {
-    if (!redemptions.length) return null;
+  if (!redemptions.length) return null;
 
-    const devs = [
-        {
-            name: "Nandhakumar B M",
-            email: "nandhakumarbm7@gmail.com",
-            phone: "+91 7418191606",
-        },
-        {
-            name: "Akash MG",
-            email: "akdev2176@gmail.com",
-            phone: "+91 7305594291",
-        },
-    ];
+  const devs = [
+    {
+      name: "Nandhakumar B M",
+      email: "nandhakumarbm7@gmail.com",
+    },
+    {
+      name: "Akash MG",
+      email: "akdev2176@gmail.com",
+    },
+  ];
 
-    return (
-        <>
-            <style>
-                {`
+  return (
+    <>
+      <style>
+        {`
           .credits-container {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 16px;
@@ -133,38 +131,35 @@ export default function ImprovedDevCredits({ redemptions = [1] }) {
             }
           }
         `}
-            </style>
+      </style>
 
-            <div className="credits-container">
-                <div className="credits-bg" />
+      <div className="credits-container">
+        <div className="credits-bg" />
 
-                {/* ICON + HEADER INLINE */}
-                <div className="credits-header-line">
-                    <div className="credits-icon">
-                        <Code size={24} color="white" />
-                    </div>
-                    <div className="credits-header-text">Developed By</div>
-                </div>
+        {/* ICON + HEADER INLINE */}
+        <div className="credits-header-line">
+          <div className="credits-icon">
+            <Code size={24} color="white" />
+          </div>
+          <div className="credits-header-text">Developed By</div>
+        </div>
 
-                {/* FULL-WIDTH DEV CARDS */}
-                <div className="dev-grid">
-                    {devs.map((dev, i) => (
-                        <div key={i} className="dev-card">
-                            <div className="dev-name">{dev.name}</div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                <a href={`mailto:${dev.email}`} className="contact-link">
-                                    <Mail size={14} /> {dev.email}
-                                </a>
-                                <a href={`tel:${dev.phone}`} className="contact-link">
-                                    <Phone size={14} /> {dev.phone}
-                                </a>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="credits-footer">Let's build your dream together!😉</div>
+        {/* FULL-WIDTH DEV CARDS */}
+        <div className="dev-grid">
+          {devs.map((dev, i) => (
+            <div key={i} className="dev-card">
+              <div className="dev-name">{dev.name}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <a href={`mailto:${dev.email}`} className="contact-link">
+                  <Mail size={14} /> {dev.email}
+                </a>
+              </div>
             </div>
-        </>
-    );
+          ))}
+        </div>
+
+        <div className="credits-footer">Let's build your dream together!😉</div>
+      </div>
+    </>
+  );
 }
