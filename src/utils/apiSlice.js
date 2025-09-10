@@ -91,6 +91,13 @@ export const apiSlice = createApi({
         body: storeId,
       }),
     }),
+    activateStore: builder.mutation({
+      query: (storeId) => ({
+        url: "/store/store/activate",
+        method: "PUT",
+        body: storeId,
+      }),
+    }),
     getStore: builder.query({
       query: (storeId) => `/store/store/`,
     }),
@@ -127,6 +134,14 @@ export const apiSlice = createApi({
         url: "/offers/offers",
         method: "DELETE",
         body: offerId,
+      }),
+    }),
+
+    activateOffer: builder.mutation({
+      query: (data) => ({
+        url: "/offers/offers",
+        method: "PUT",
+        body: data, // { offerId: "..." }
       }),
     }),
 
@@ -185,6 +200,16 @@ export const apiSlice = createApi({
     getAddForRedeem: builder.query({
       query: () => "/ad/ad-for-redeem",
     }),
+
+    activateAd: builder.mutation({
+      query: (adId) => ({
+        url: "/ad/ad/activate",
+        method: "PUT",
+        body: adId,
+      }),
+    }),
+
+
   }),
 });
 
@@ -207,6 +232,7 @@ export const {
   useCreateStoreMutation,
   useEditStoreMutation,
   useDeleteStoreMutation,
+  useActivateStoreMutation,
   useGetStoreQuery,
 
   // Redemption
@@ -217,6 +243,7 @@ export const {
   useCreateOfferMutation,
   useGetAllOffersQuery,
   useDeleteOfferMutation,
+  useActivateOfferMutation, 
 
   // Coupon
   useGenerateCouponMutation,
@@ -229,6 +256,7 @@ export const {
   useGetAllAdsQuery,
   useDeleteAdMutation,
   useGetAddForRedeemQuery,
+  useActivateAdMutation,
 
   useGetCarouselPosterQuery,
 } = apiSlice;

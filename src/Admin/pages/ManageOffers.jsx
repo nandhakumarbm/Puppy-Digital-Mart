@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
-import { Plus, AlertCircle, CheckCircle, Gift, Trash2, Eye, Upload, Image } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle, Gift, Trash2, Eye, Upload, Image, RotateCcw, ToggleLeft, ToggleRight } from 'lucide-react';
 import {
     useCreateOfferMutation,
     useGetAllOffersQuery,
-    useDeleteOfferMutation
+    useDeleteOfferMutation,
+    useActivateOfferMutation
 } from '../../utils/apiSlice';
 
 const ManageOffers = () => {
     // API hooks
     const [createOffer, { isLoading: isCreatingOffer }] = useCreateOfferMutation();
     const [deleteOffer, { isLoading: isDeletingOffer }] = useDeleteOfferMutation();
+    const [activateOffer, { isLoading: isActivatingOffer }] = useActivateOfferMutation();
     const { data: allOffers = [], isLoading: isLoadingOffers, refetch: refetchOffers } = useGetAllOffersQuery();
 
-    // Filter only active offers
-    const offers = allOffers.filter(offer => offer.isActive === true);
+    // UI state for toggle
+    const [showInactive, setShowInactive] = useState(false);
+
+    // Filter offers based on toggle
+    const offers = showInactive ? allOffers : allOffers.filter(offer => offer.isActive === true);
+    const activeCount = allOffers.filter(offer => offer.isActive === true).length;
+    const inactiveCount = allOffers.filter(offer => offer.isActive === false).length;
 
     // Form state
     const [offerForm, setOfferForm] = useState({
@@ -122,6 +129,18 @@ const ManageOffers = () => {
             refetchOffers();
         } catch (error) {
             const errorMessage = error?.data?.message || error?.message || 'Failed to create offer';
+            showNotification(errorMessage, 'error');
+        }
+    };
+
+    // Activate offer function
+    const handleActivateOffer = async (offerId) => {
+        try {
+            await activateOffer({ offerId }).unwrap();
+            showNotification('Offer activated successfully');
+            refetchOffers();
+        } catch (error) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to activate offer';
             showNotification(errorMessage, 'error');
         }
     };
@@ -318,17 +337,38 @@ const ManageOffers = () => {
                     </div>
                 </div>
 
-                {/* Active Offers List */}
+                {/* All Offers List */}
                 <div style={cardStyle}>
                     <div style={contentStyle}>
                         <div style={sectionHeaderStyle}>
                             <h2 style={sectionTitleStyle}>
                                 <Eye size={24} />
-                                Active Offers ({offers.length})
+                                All Offers ({offers.length})
                             </h2>
-                            <div style={showingActiveStyle}>
-                                <span style={activeIndicatorStyle}>●</span>
-                                Showing only active offers
+                            <div style={headerControlsStyle}>
+                                <div style={offerCountsStyle}>
+                                    <span style={countItemStyle}>
+                                        <span style={activeIndicatorStyle}>●</span>
+                                        Active: {activeCount}
+                                    </span>
+                                    <span style={countItemStyle}>
+                                        <span style={inactiveIndicatorStyle}>●</span>
+                                        Inactive: {inactiveCount}
+                                    </span>
+                                </div>
+                                <div 
+                                    style={toggleContainerStyle} 
+                                    onClick={() => setShowInactive(!showInactive)}
+                                >
+                                    {showInactive ? (
+                                        <ToggleRight size={20} style={{ color: 'var(--accent-primary)' }} />
+                                    ) : (
+                                        <ToggleLeft size={20} style={{ color: 'var(--secondary-text)' }} />
+                                    )}
+                                    <span style={toggleLabelStyle}>
+                                        {showInactive ? 'Show All' : 'Active Only'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -337,11 +377,11 @@ const ManageOffers = () => {
                         ) : offers.length === 0 ? (
                             <div style={emptyStateStyle}>
                                 <Gift size={48} style={{ color: 'var(--secondary-text)' }} />
-                                <p>No active offers found</p>
+                                <p>No {showInactive ? '' : 'active '}offers found</p>
                                 <p style={emptySubtextStyle}>
-                                    {allOffers.length > 0 ?
-                                        `${allOffers.length} inactive offer(s) are hidden` :
-                                        'Create your first offer above'
+                                    {showInactive ? 
+                                        'Create your first offer above' :
+                                        `${inactiveCount} inactive offer(s) available - toggle to view all`
                                     }
                                 </p>
                             </div>
@@ -358,19 +398,36 @@ const ManageOffers = () => {
                                                     e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgODBDOTQuNDc3MiA4MCA5MCA4NC40NzcyIDkwIDkwQzkwIDk1LjUyMjggOTQuNDc3MiAxMDAgMTAwIDEwMEMxMDUuNTIzIDEwMCAxMTAgOTUuNTIyOCAxMTAgOTBDMTEwIDg0LjQ3NzIgMTA1LjUyMyA4MCAxMDAgODBaIiBmaWxsPSIjOUI5Qzk4Ii8+CjxwYXRoIGQ9Ik0xMDAgMTIwQzk0LjQ3NzIgMTIwIDkwIDEyNC40NzcgOTAgMTMwQzkwIDEzNS41MjMgOTQuNDc3MiAxNDAgMTAwIDE0MEMxMDUuNTIzIDE0MCAxMTAgMTM1LjUyMyAxMTAgMTMwQzExMCAxMjQuNDc3IDEwNS41MjMgMTIwIDEwMCAxMjBaIiBmaWxsPSIjOUI5Qzk4Ii8+Cjwvc3ZnPgo=';
                                                 }}
                                             />
+                                            {!offer.isActive && (
+                                                <div style={inactiveOverlayStyle}>
+                                                    <span style={inactiveLabelStyle}>INACTIVE</span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div style={offerContentStyle}>
                                             <h3 style={offerTitleStyle}>{offer.title}</h3>
                                             <p style={offerDescriptionStyle}>{offer.description}</p>
                                             <div style={offerMetaStyle}>
                                                 <span style={offerCostStyle}>{offer.orbitCost} Orbits</span>
-                                                <button
-                                                    onClick={() => confirmDelete(offer._id, offer.title)}
-                                                    style={deleteOfferButtonStyle}
-                                                    title="Delete offer"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                <div style={offerActionsStyle}>
+                                                    {!offer.isActive && (
+                                                        <button
+                                                            onClick={() => handleActivateOffer(offer._id)}
+                                                            style={activateOfferButtonStyle}
+                                                            title="Activate offer"
+                                                            disabled={isActivatingOffer}
+                                                        >
+                                                            <RotateCcw size={16} />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => confirmDelete(offer._id, offer.title)}
+                                                        style={deleteOfferButtonStyle}
+                                                        title="Delete offer"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -384,7 +441,7 @@ const ManageOffers = () => {
     );
 };
 
-// Updated styles - including new styles from ManageAds
+// Styles
 const containerStyle = { backgroundColor: 'var(--background)', minHeight: '100vh', padding: '24px', fontFamily: 'var(--font-family)' };
 const maxWidthStyle = { maxWidth: '1200px', margin: '0 auto' };
 const notificationStyle = { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '8px', border: '1px solid', marginBottom: '24px', fontSize: '14px', fontWeight: '500' };
@@ -405,17 +462,15 @@ const inputStyle = { padding: '12px 16px', border: '1px solid var(--input-border
 const textareaStyle = { ...inputStyle, resize: 'vertical', minHeight: '80px' };
 const primaryButtonStyle = { backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', padding: '14px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: 'var(--font-family)' };
 
-// New file upload styles from ManageAds
+// File upload styles
 const fileUploadContainerStyle = {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px'
 };
-
 const hiddenFileInputStyle = {
     display: 'none'
 };
-
 const fileUploadButtonStyle = {
     padding: '12px 16px',
     border: '2px dashed var(--input-border)',
@@ -432,7 +487,6 @@ const fileUploadButtonStyle = {
     fontSize: '14px',
     fontWeight: '500'
 };
-
 const fileInfoStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -443,29 +497,33 @@ const fileInfoStyle = {
     fontSize: '14px',
     color: 'var(--primary-text)'
 };
-
 const fileSizeStyle = {
     color: 'var(--secondary-text)',
     fontSize: '12px'
 };
-
 const helpTextStyle = {
     fontSize: '12px',
     color: 'var(--secondary-text)',
     fontStyle: 'italic'
 };
 
+// Preview and other styles
 const previewContainerStyle = { border: '1px solid var(--card-border)', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f9f9f9' };
 const previewImageStyle = { width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' };
 const spinnerStyle = { width: '16px', height: '16px', border: '2px solid transparent', borderTop: '2px solid currentColor', borderRadius: '50%', animation: 'spin 1s linear infinite' };
 const loadingStyle = { textAlign: 'center', padding: '40px', color: 'var(--secondary-text)' };
 const emptyStateStyle = { textAlign: 'center', padding: '60px 20px', color: 'var(--secondary-text)' };
+const emptySubtextStyle = {
+    fontSize: '12px',
+    color: 'var(--secondary-text)',
+    marginTop: '8px',
+    fontStyle: 'italic'
+};
+
+// Offers grid and card styles
 const offersGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' };
 const offerCardStyle = { border: '1px solid var(--card-border)', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--background)', transition: 'transform 0.2s ease, box-shadow 0.2s ease' };
 const offerImageContainerStyle = { height: '160px', overflow: 'hidden', position: 'relative' };
-const sectionHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' };
-const showingActiveStyle = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#10B981', backgroundColor: '#ECFDF5', padding: '6px 12px', borderRadius: '20px', border: '1px solid #D1FAE5' };
-const activeIndicatorStyle = { color: '#10B981', fontSize: '8px' };
 const offerImageStyle = { width: '100%', height: '100%', objectFit: 'cover' };
 const offerContentStyle = { padding: '16px' };
 const offerTitleStyle = { fontSize: '16px', fontWeight: '600', color: 'var(--primary-text)', margin: '0 0 8px 0' };
@@ -474,11 +532,18 @@ const offerMetaStyle = { display: 'flex', alignItems: 'center', justifyContent: 
 const offerCostStyle = { fontSize: '14px', fontWeight: '600', color: 'var(--accent-primary)' };
 const deleteOfferButtonStyle = { padding: '6px', border: 'none', borderRadius: '6px', backgroundColor: '#FEE2E2', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease' };
 
-const emptySubtextStyle = {
-    fontSize: '12px',
-    color: 'var(--secondary-text)',
-    marginTop: '8px',
-    fontStyle: 'italic'
-};
+// New styles for toggle functionality
+const sectionHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' };
+const headerControlsStyle = { display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' };
+const offerCountsStyle = { display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px' };
+const countItemStyle = { display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--secondary-text)' };
+const toggleContainerStyle = { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', backgroundColor: 'var(--card-background)', transition: 'all 0.2s ease' };
+const toggleLabelStyle = { fontSize: '14px', fontWeight: '500', color: 'var(--primary-text)', userSelect: 'none' };
+const activeIndicatorStyle = { color: '#10B981', fontSize: '8px' };
+const inactiveIndicatorStyle = { color: '#EF4444', fontSize: '8px' };
+const inactiveOverlayStyle = { position: 'absolute', top: '8px', right: '8px', backgroundColor: 'rgba(239, 68, 68, 0.9)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '600' };
+const inactiveLabelStyle = { fontSize: '10px', fontWeight: '600' };
+const offerActionsStyle = { display: 'flex', alignItems: 'center', gap: '8px' };
+const activateOfferButtonStyle = { padding: '6px', border: 'none', borderRadius: '6px', backgroundColor: '#DBEAFE', color: '#1D4ED8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease' };
 
 export default ManageOffers;

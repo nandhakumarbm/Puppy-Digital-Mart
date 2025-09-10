@@ -1,20 +1,37 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, AlertCircle, CheckCircle, Video, Image, Trash2, Eye, Play, Upload } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle, Video, Image, Trash2, Eye, Play, Upload, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 import {
   useCreateAdMutation,
   useGetAllAdsQuery,
-  useDeleteAdMutation
+  useDeleteAdMutation,
+  useActivateAdMutation
 } from '../../utils/apiSlice';
 
 const ManageAds = () => {
   // API hooks
   const [createAd, { isLoading: isCreatingAd }] = useCreateAdMutation();
   const [deleteAd, { isLoading: isDeletingAd }] = useDeleteAdMutation();
+  const [activateAd, { isLoading: isActivatingAd }] = useActivateAdMutation();
   const { data: allAds = [], isLoading: isLoadingAds, refetch: refetchAds } = useGetAllAdsQuery();
 
-  // Filter only active ads
+  // UI state
+  const [showInactiveAds, setShowInactiveAds] = useState(false);
+
+  // Filter ads based on toggle state
   const ads = useMemo(() => {
+    if (showInactiveAds) {
+      return allAds.filter(ad => ad.isActive === false);
+    }
     return allAds.filter(ad => ad.isActive === true);
+  }, [allAds, showInactiveAds]);
+
+  // Get counts for display
+  const activeAdsCount = useMemo(() => {
+    return allAds.filter(ad => ad.isActive === true).length;
+  }, [allAds]);
+
+  const inactiveAdsCount = useMemo(() => {
+    return allAds.filter(ad => ad.isActive === false).length;
   }, [allAds]);
 
   // Form state
@@ -24,12 +41,13 @@ const ManageAds = () => {
     mediaUrl: '',
     type: 'image',
     imageFile: null,
-    imagePreviewUrl: null // Add preview URL for display
+    imagePreviewUrl: null
   });
 
   // UI state
   const [notification, setNotification] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, id: '', title: '' });
+  const [activateConfirm, setActivateConfirm] = useState({ show: false, id: '', title: '' });
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -170,9 +188,27 @@ const ManageAds = () => {
     }
   };
 
+  // Activate ad function
+  const handleActivateAd = async (adId) => {
+    try {
+      await activateAd({ adId }).unwrap();
+      showNotification('Advertisement activated successfully');
+      refetchAds();
+      setActivateConfirm({ show: false, id: '', title: '' });
+    } catch (error) {
+      const errorMessage = error?.data?.message || error?.message || 'Failed to activate advertisement';
+      showNotification(errorMessage, 'error');
+    }
+  };
+
   // Show delete confirmation
   const confirmDelete = (id, title) => {
     setDeleteConfirm({ show: true, id, title });
+  };
+
+  // Show activate confirmation
+  const confirmActivate = (id, title) => {
+    setActivateConfirm({ show: true, id, title });
   };
 
   const isValidUrl = (string) => {
@@ -255,6 +291,35 @@ const ManageAds = () => {
                   disabled={isDeletingAd}
                 >
                   {isDeletingAd ? 'Deactivating...' : 'Deactivate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Activate Confirmation Modal */}
+        {activateConfirm.show && (
+          <div style={modalOverlayStyle}>
+            <div style={modalStyle}>
+              <h3 style={modalTitleStyle}>Confirm Activate</h3>
+              <p style={modalTextStyle}>
+                Are you sure you want to activate this advertisement "{activateConfirm.title}"?
+                This will make it visible in the active advertisements list.
+              </p>
+              <div style={modalButtonsStyle}>
+                <button
+                  onClick={() => setActivateConfirm({ show: false, id: '', title: '' })}
+                  style={cancelButtonStyle}
+                  disabled={isActivatingAd}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleActivateAd(activateConfirm.id)}
+                  style={activateButtonStyle}
+                  disabled={isActivatingAd}
+                >
+                  {isActivatingAd ? 'Activating...' : 'Activate'}
                 </button>
               </div>
             </div>
@@ -404,18 +469,52 @@ const ManageAds = () => {
           </div>
         </div>
 
-        {/* Active Ads List */}
+        {/* Ads List with Toggle */}
         <div style={cardStyle}>
           <div style={contentStyle}>
             <div style={headerStyle}>
               <h2 style={sectionTitleStyle}>
                 <Eye size={24} />
-                Active Advertisements ({ads.length})
+                {showInactiveAds ? 'Inactive' : 'Active'} Advertisements ({ads.length})
               </h2>
-              <div style={activeIndicatorStyle}>
-                <div style={activeDotStyle}></div>
-                <span style={activeTextStyle}>Showing only active ads</span>
+              
+              <div style={headerControlsStyle}>
+                {/* Status counts */}
+                <div style={statusCountsStyle}>
+                  <span style={statusCountStyle}>
+                    Active: <strong>{activeAdsCount}</strong>
+                  </span>
+                  <span style={statusCountStyle}>
+                    Inactive: <strong>{inactiveAdsCount}</strong>
+                  </span>
+                </div>
+                
+                {/* Toggle button */}
+                <button
+                  onClick={() => setShowInactiveAds(!showInactiveAds)}
+                  style={toggleButtonStyle}
+                  title={showInactiveAds ? 'Show active ads' : 'Show inactive ads'}
+                >
+                  {showInactiveAds ? (
+                    <>
+                      <ToggleRight size={20} />
+                      Show Active
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft size={20} />
+                      Show Inactive
+                    </>
+                  )}
+                </button>
               </div>
+            </div>
+
+            <div style={activeIndicatorStyle}>
+              <div style={showInactiveAds ? inactiveDotStyle : activeDotStyle}></div>
+              <span style={showInactiveAds ? inactiveTextStyle : activeTextStyle}>
+                {showInactiveAds ? 'Showing inactive advertisements' : 'Showing active advertisements'}
+              </span>
             </div>
 
             {isLoadingAds ? (
@@ -423,10 +522,12 @@ const ManageAds = () => {
             ) : ads.length === 0 ? (
               <div style={emptyStateStyle}>
                 <Video size={48} style={{ color: 'var(--secondary-text)' }} />
-                <p>No active advertisements found</p>
+                <p>No {showInactiveAds ? 'inactive' : 'active'} advertisements found</p>
                 <p style={emptySubtextStyle}>
-                  {allAds.length > 0
-                    ? `${allAds.length} inactive advertisement(s) are hidden`
+                  {showInactiveAds
+                    ? `${activeAdsCount} active advertisement(s) available`
+                    : inactiveAdsCount > 0
+                    ? `${inactiveAdsCount} inactive advertisement(s) available`
                     : 'Create your first advertisement above'
                   }
                 </p>
@@ -436,10 +537,12 @@ const ManageAds = () => {
                 {ads.map((ad) => (
                   <div key={ad._id} style={adCardStyle}>
                     <div style={adMediaContainerStyle}>
-                      {/* Active status indicator */}
-                      <div style={activeStatusStyle}>
-                        <div style={activeStatusDotStyle}></div>
-                        <span style={activeStatusTextStyle}>Active</span>
+                      {/* Status indicator */}
+                      <div style={ad.isActive ? activeStatusStyle : inactiveStatusStyle}>
+                        <div style={ad.isActive ? activeStatusDotStyle : inactiveStatusDotStyle}></div>
+                        <span style={ad.isActive ? activeStatusTextStyle : inactiveStatusTextStyle}>
+                          {ad.isActive ? 'Active' : 'Inactive'}
+                        </span>
                       </div>
 
                       {ad.type === 'image' ? (
@@ -475,13 +578,25 @@ const ManageAds = () => {
                             </>
                           )}
                         </span>
-                        <button
-                          onClick={() => confirmDelete(ad._id, ad.title)}
-                          style={deleteAdButtonStyle}
-                          title="Deactivate advertisement"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div style={adButtonsStyle}>
+                          {ad.isActive ? (
+                            <button
+                              onClick={() => confirmDelete(ad._id, ad.title)}
+                              style={deleteAdButtonStyle}
+                              title="Deactivate advertisement"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => confirmActivate(ad._id, ad.title)}
+                              style={activateAdButtonStyle}
+                              title="Activate advertisement"
+                            >
+                              <RefreshCw size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div style={adUrlStyle}>
                         <a
@@ -508,7 +623,7 @@ const ManageAds = () => {
   );
 };
 
-// Styles with added spinner animation keyframes
+// Styles with new styles for toggle functionality
 const containerStyle = {
   backgroundColor: 'var(--background)',
   minHeight: '100vh',
@@ -590,6 +705,16 @@ const deleteButtonStyle = {
   border: 'none',
   borderRadius: '6px',
   backgroundColor: '#EF4444',
+  color: 'white',
+  cursor: 'pointer',
+  fontSize: '14px'
+};
+
+const activateButtonStyle = {
+  padding: '8px 16px',
+  border: 'none',
+  borderRadius: '6px',
+  backgroundColor: '#22C55E',
   color: 'white',
   cursor: 'pointer',
   fontSize: '14px'
@@ -785,6 +910,13 @@ const emptyStateStyle = {
   color: 'var(--secondary-text)'
 };
 
+const emptySubtextStyle = {
+  fontSize: '12px',
+  color: 'var(--secondary-text)',
+  marginTop: '8px',
+  fontStyle: 'italic'
+};
+
 const adsGridStyle = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
@@ -866,12 +998,30 @@ const adTypeStyle = {
   gap: '4px'
 };
 
+const adButtonsStyle = {
+  display: 'flex',
+  gap: '8px'
+};
+
 const deleteAdButtonStyle = {
   padding: '6px',
   border: 'none',
   borderRadius: '6px',
   backgroundColor: '#FEE2E2',
   color: '#DC2626',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'background-color 0.2s ease'
+};
+
+const activateAdButtonStyle = {
+  padding: '6px',
+  border: 'none',
+  borderRadius: '6px',
+  backgroundColor: '#DCFCE7',
+  color: '#16A34A',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -890,13 +1040,56 @@ const adLinkStyle = {
   fontWeight: '500'
 };
 
+const adDateStyle = {
+  fontSize: '11px',
+  color: 'var(--secondary-text)',
+  marginTop: '8px',
+  fontStyle: 'italic'
+};
+
 const headerStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  marginBottom: '24px',
+  marginBottom: '16px',
   flexWrap: 'wrap',
   gap: '16px'
+};
+
+const headerControlsStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+  flexWrap: 'wrap'
+};
+
+const statusCountsStyle = {
+  display: 'flex',
+  gap: '12px',
+  alignItems: 'center'
+};
+
+const statusCountStyle = {
+  fontSize: '12px',
+  color: 'var(--secondary-text)',
+  padding: '4px 8px',
+  backgroundColor: '#F3F4F6',
+  borderRadius: '12px'
+};
+
+const toggleButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '8px 12px',
+  backgroundColor: '#F3F4F6',
+  border: '1px solid var(--card-border)',
+  borderRadius: '20px',
+  cursor: 'pointer',
+  fontSize: '12px',
+  fontWeight: '500',
+  color: 'var(--primary-text)',
+  transition: 'all 0.2s ease'
 };
 
 const activeIndicatorStyle = {
@@ -906,7 +1099,8 @@ const activeIndicatorStyle = {
   padding: '6px 12px',
   backgroundColor: '#F0FDF4',
   borderRadius: '20px',
-  border: '1px solid #BBF7D0'
+  border: '1px solid #BBF7D0',
+  marginBottom: '24px'
 };
 
 const activeDotStyle = {
@@ -919,6 +1113,19 @@ const activeDotStyle = {
 const activeTextStyle = {
   fontSize: '12px',
   color: '#166534',
+  fontWeight: '500'
+};
+
+const inactiveDotStyle = {
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  backgroundColor: '#EF4444'
+};
+
+const inactiveTextStyle = {
+  fontSize: '12px',
+  color: '#991B1B',
   fontWeight: '500'
 };
 
@@ -948,18 +1155,31 @@ const activeStatusTextStyle = {
   fontWeight: '600'
 };
 
-const emptySubtextStyle = {
-  fontSize: '12px',
-  color: 'var(--secondary-text)',
-  marginTop: '8px',
-  fontStyle: 'italic'
+const inactiveStatusStyle = {
+  position: 'absolute',
+  top: '8px',
+  left: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
+  padding: '4px 8px',
+  backgroundColor: 'rgba(239, 68, 68, 0.9)',
+  borderRadius: '12px',
+  zIndex: 1
 };
 
-const adDateStyle = {
-  fontSize: '11px',
-  color: 'var(--secondary-text)',
-  marginTop: '8px',
-  fontStyle: 'italic'
+const inactiveStatusDotStyle = {
+  width: '6px',
+  height: '6px',
+  borderRadius: '50%',
+  backgroundColor: 'white'
 };
 
-export default ManageAds; 
+const inactiveStatusTextStyle = {
+  fontSize: '10px',
+  color: 'white',
+  fontWeight: '600'
+};
+
+
+export default ManageAds;
