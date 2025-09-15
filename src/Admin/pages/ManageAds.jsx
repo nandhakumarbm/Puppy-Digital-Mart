@@ -14,7 +14,7 @@ const ManageAds = () => {
 
   // Filter only active ads
   const ads = useMemo(() => {
-    return allAds.filter(ad => ad.isActive === true);
+    return allAds.filter(ad => ad.isActive === true).reverse();
   }, [allAds]);
 
   // Form state
@@ -104,13 +104,7 @@ const ManageAds = () => {
         formData.append('title', adForm.title.trim());
         formData.append('description', adForm.description.trim());
         formData.append('image', adForm.imageFile); // Send raw image file
-        
-        // Debug: Log FormData entries
-        console.log('FormData entries:');
-        for (let pair of formData.entries()) {
-          console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File: ${pair[1].name}` : pair[1]));
-        }
-        
+
         adData = formData;
       } else {
         // For video, send regular JSON data
@@ -120,7 +114,6 @@ const ManageAds = () => {
           description: adForm.description.trim(),
           mediaUrl: adForm.mediaUrl
         };
-        console.log('Video ad data:', adData);
       }
 
       const res = await createAd(adData);

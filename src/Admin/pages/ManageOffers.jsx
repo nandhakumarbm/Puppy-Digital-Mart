@@ -13,7 +13,7 @@ const ManageOffers = () => {
     const { data: allOffers = [], isLoading: isLoadingOffers, refetch: refetchOffers } = useGetAllOffersQuery();
 
     // Filter only active offers
-    const offers = allOffers.filter(offer => offer.isActive === true);
+    const offers = allOffers.filter(offer => offer.isActive === true).reverse();
 
     // Form state
     const [offerForm, setOfferForm] = useState({

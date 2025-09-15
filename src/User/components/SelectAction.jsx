@@ -1,4 +1,5 @@
 import React from "react";
+import couponImage from '../../assets/coupon-code.jpg';
 
 function SelectAction({ onSelect, qrDisabled = true }) {
     const styles = {
@@ -11,7 +12,7 @@ function SelectAction({ onSelect, qrDisabled = true }) {
             position: "relative",
         },
         qrCard: {
-            position: "relative", 
+            position: "relative",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -31,7 +32,7 @@ function SelectAction({ onSelect, qrDisabled = true }) {
             pointerEvents: qrDisabled ? "none" : "auto",
         },
         card: {
-            position: "relative",   // 👈 optional, in case you add overlays later
+            position: "relative",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -48,9 +49,15 @@ function SelectAction({ onSelect, qrDisabled = true }) {
             transition: "transform 0.2s ease, background 0.2s ease",
             border: `1px solid var(--card-border)`,
         },
-
-        icon: { fontSize: "40px" },
-        label: { marginTop: "10px", fontSize: "14px" },
+        icon: { 
+            width: "120px",
+            height: "120px",
+            objectFit: "contain",
+        },
+        label: { 
+            fontSize: "14px",
+            lineHeight: "1",
+        },
         overlay: {
             position: "absolute",
             top: 0,
@@ -68,7 +75,7 @@ function SelectAction({ onSelect, qrDisabled = true }) {
             backdropFilter: "blur(2px)",
             animation: "slideInDiagonal 0.8s ease-out",
             zIndex: 10,
-        }
+        },
     };
 
     React.useEffect(() => {
@@ -98,10 +105,19 @@ function SelectAction({ onSelect, qrDisabled = true }) {
             </div>
 
             <div style={styles.card} onClick={() => onSelect("coupon")}>
-                <div style={styles.icon}>🎟️</div>
+                <div style={styles.icon}>
+                    <img 
+                        src={couponImage} 
+                        alt="Coupon Icon" 
+                        style={{ 
+                            width: "120px", 
+                            height: "120px", 
+                            objectFit: "contain" 
+                        }} 
+                    />
+                </div>
                 <div style={styles.label}>Enter Coupon Code</div>
             </div>
-
         </div>
     );
 }

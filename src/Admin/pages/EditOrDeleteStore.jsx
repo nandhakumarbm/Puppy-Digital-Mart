@@ -23,16 +23,16 @@ const MultiStoreManagement = () => {
     message: '',
     severity: 'success' // 'success', 'error', 'warning', 'info'
   });
-
+ 
   // RTK Query hooks
   const { data: storesData, isLoading, error, refetch } = useGetStoreQuery();
   const [editStore, { isLoading: isEditLoading }] = useEditStoreMutation();
   const [deleteStore, { isLoading: isDeleting }] = useDeleteStoreMutation();
 
-  console.log(storesData);
-
   // Convert single store response to array format for consistency
-  const stores = storesData ? (Array.isArray(storesData) ? storesData : [storesData]) : [];
+  const stores = storesData && Array.isArray(storesData)
+  ? [...storesData].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+  : [];
 
   // Filter stores based on search and status
   const filteredStores = stores.filter(store => {
