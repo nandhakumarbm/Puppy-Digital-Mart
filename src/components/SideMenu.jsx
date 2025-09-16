@@ -273,6 +273,7 @@ function SideMenu({ isOpen, onClose }) {
     const adminMenuStructure = [
         { path: "/admin/", icon: "👥", label: "Users" },
         { path: "/admin/redeemreq", icon: "📋", label: "Redemption Requests" },
+        { path: "/admin/walletHistory", icon: "🏷️", label: "Transaction details" },
         {
             type: "group",
             key: "stores",
@@ -294,6 +295,7 @@ function SideMenu({ isOpen, onClose }) {
                 { path: "/admin/liveCoupons", icon: "🎟️", label: "Manage Coupons" },
             ]
         },
+        { path: "/admin/changePassword", icon:"🔑",label: "Change Password" },
         { path: "/admin/profile", icon: "👤", label: "Profile" },
     ];
 
@@ -438,7 +440,7 @@ function SideMenu({ isOpen, onClose }) {
                 </div>
             </div>
         </>
-    );
+    );          
 }
 
 export default SideMenu;
