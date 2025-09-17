@@ -16,11 +16,11 @@ function ChangePassword() {
     setError("");
     setSuccess("");
     try {
-      const response = await getProfileByPhone({ phone }).unwrap();
+      const response = await getProfileByPhone({ phone });
       setUserDetails({
-        phone: response.phone,
-        username: response.username,
-        walletBalance: response.walletId.walletBalance,
+        phone: response.data.phone,
+        username: response.data.username,
+        walletBalance: response.data.walletId.walletBalance,
       });
     } catch (err) {
       setError("Failed to fetch user details. Please check the phone number.");

@@ -89,9 +89,10 @@ export const apiSlice = createApi({
       query: () => "/wallet/wallethistory"
     }),
     getProfileByPhone: builder.mutation({
-      query: () => ({
+      query: (data) => ({
         url: "/user/profile/phone",
         method: "POST",
+        body: data,
       }),
     }),
     changePassword: builder.mutation({
