@@ -27,8 +27,8 @@ function ChangePassword() {
     }
   };
 
-  const navigateToWhatsApp = (phoneNumber) => {
-    const message = encodeURIComponent("Your password has been changed successfully!");
+  const navigateToWhatsApp = (phoneNumber,newPassword) => {
+    const message = encodeURIComponent(`Your password has been changed successfully! and your new password is: ${newPassword}`);
     const url = `https://wa.me/91${phoneNumber}?text=${message}`;
     window.open(url, "_blank");
   };
@@ -42,7 +42,7 @@ function ChangePassword() {
       await changePassword({ phone, newPassword }).unwrap();
       setSuccess("Password changed successfully!");
       setNewPassword("");
-      navigateToWhatsApp(phone);
+      navigateToWhatsApp(phone,newPassword);
     } catch (err) {
       setError("Failed to change password. Please try again.");
     }
