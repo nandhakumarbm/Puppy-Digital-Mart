@@ -41,21 +41,20 @@ function ChangePassword() {
   };
 
   return (
-    <div className="app-container">
+    <div  style={{display:"flex",alignItems:"start"}} className="app-container">
       <div style={{
         backgroundColor: "var(--card-background)",
         border: "1px solid var(--card-border)",
         borderRadius: "8px",
         padding: "2rem",
-        width: "100%",
-        maxWidth: "400px",
+        width: "90%",
+        maxWidth: "700px",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
       }}>
         <h2 style={{
           fontSize: "1.5rem",
           fontWeight: "600",
           color: "var(--primary-text)",
-          marginBottom: "1.5rem",
           textAlign: "center",
         }}>
           Admin - Change Password

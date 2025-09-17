@@ -89,8 +89,8 @@ function WalletHistory() {
   };
 
   const formatAmount = (amount) => {
-    const formatted = Math.abs(amount).toFixed(2);
-    return amount >= 0 ? `+$${formatted}` : `-$${formatted}`;
+    const formatted = Math.abs(amount);
+    return amount >= 0 ? `${formatted}` : `${formatted}`;
   };
 
   if (isLoading) {
@@ -199,7 +199,7 @@ function WalletHistory() {
                   <tr>
                     <th><User className="th-icon" /> Username</th>
                     <th><Phone className="th-icon" /> Phone</th>
-                    <th><DollarSign className="th-icon" /> Amount</th>
+                    <th>Orbits</th>
                     <th><Calendar className="th-icon" /> Date</th>
                     <th><Tag className="th-icon" /> Coupon Code</th>
                   </tr>
