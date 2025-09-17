@@ -42,6 +42,16 @@ function Login() {
     }
   };
 
+  const navigateToWhatsApp = () => {
+    const name = encodeURIComponent("Name: [Your_Name]");
+    const phone = encodeURIComponent("Phone Number: [Your_Phone_Number]");
+    const message = `${name}%0A${phone}`; // %0A is newline in URL encoding
+    const url = `https://wa.me/919789619917?text=${message}`;
+    window.open(url, "_blank");
+  };
+
+
+
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
       <div style={{
@@ -137,6 +147,10 @@ function Login() {
 
           {authError && <p style={{ color: "#ff4c4c", fontSize: "14px", marginTop: "5px", textAlign: "center" }}>{authError}</p>}
 
+          <div onClick={navigateToWhatsApp} style={{ display: "flex", justifyContent: "flex-end" }}>
+            <span style={{
+              color: "var(--accent-primary)", textDecoration: "none", fontSize: "14px", cursor: "pointer", display: "block"
+            }}>Forgot password</span> </div>
           <button type="submit" style={{
             padding: "12px",
             borderRadius: "8px",
