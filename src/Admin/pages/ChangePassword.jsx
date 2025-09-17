@@ -27,6 +27,13 @@ function ChangePassword() {
     }
   };
 
+  const navigateToWhatsApp = (phoneNumber) => {
+    const message = encodeURIComponent("Your password has been changed successfully!");
+    const url = `https://wa.me/91${phoneNumber}?text=${message}`;
+    window.open(url, "_blank");
+  };
+
+
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -35,13 +42,14 @@ function ChangePassword() {
       await changePassword({ phone, newPassword }).unwrap();
       setSuccess("Password changed successfully!");
       setNewPassword("");
+      navigateToWhatsApp(phone);
     } catch (err) {
       setError("Failed to change password. Please try again.");
     }
   };
 
   return (
-    <div  style={{display:"flex",alignItems:"start"}} className="app-container">
+    <div style={{ display: "flex", alignItems: "start" }} className="app-container">
       <div style={{
         backgroundColor: "var(--card-background)",
         border: "1px solid var(--card-border)",
