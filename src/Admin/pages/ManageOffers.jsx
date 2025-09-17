@@ -18,7 +18,6 @@ const ManageOffers = () => {
     const [showInactive, setShowInactive] = useState(false);
 
     // Filter offers based on toggle
-    const offers = showInactive ? allOffers : allOffers.filter(offer => offer.isActive === true);
     const activeCount = allOffers.filter(offer => offer.isActive === true).length;
     const inactiveCount = allOffers.filter(offer => offer.isActive === false).length;
     // Filter only active offers
