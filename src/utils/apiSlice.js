@@ -101,6 +101,26 @@ export const apiSlice = createApi({
     getStore: builder.query({
       query: (storeId) => `/store/store/`,
     }),
+    getWalletHistory: builder.query({
+      query: () => "/wallet/wallethistory"
+    }),
+    getProfileByPhone: builder.mutation({
+      query: (data) => ({
+        url: "/user/profile/phone",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    changePassword: builder.mutation({
+      query: (data) => ({
+        url: "/admin/passwordreset",
+        method: "POST",
+        body: data
+      }),
+    }),
+
+    
+
 
     // ===== REDEMPTION =====
     getAllRedemptions: builder.query({
@@ -234,6 +254,9 @@ export const {
   useDeleteStoreMutation,
   useActivateStoreMutation,
   useGetStoreQuery,
+  useGetWalletHistoryQuery,
+  useChangePasswordMutation,
+  useGetProfileByPhoneMutation,
 
   // Redemption
   useGetAllRedemptionsQuery,

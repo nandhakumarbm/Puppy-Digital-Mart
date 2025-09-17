@@ -58,7 +58,7 @@ const LiveCoupons = () => {
     // Fetch live coupons from API
     const { data: couponsData, isLoading, error, refetch } = useGetLiveCouponsQuery();
 
-    // Generate coupon mutation
+    // Generate coupon mutation     
     const [generateCoupon, { isLoading: isGenerating }] = useGenerateCouponMutation();
 
     // Show snackbar notification
@@ -365,7 +365,7 @@ const LiveCoupons = () => {
                 </Paper>
             ) : (
                 <Grid container spacing={2}>
-                    {filteredCoupons.map((coupon) => (
+                    {filteredCoupons.reverse().map((coupon) => (
                         <Grid item xs={12} sm={6} md={4} lg={3} key={coupon._id}>
                             <Card
                                 elevation={2}

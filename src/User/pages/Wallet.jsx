@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { updateWalletBalance } from "../../Slices/authSlice";
 import { toast } from "react-toastify";
 import { Alert, AlertTitle, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-    
+
 const WalletPage = () => {
     const userAuth = useSelector((state) => state.auth.wallet);
     const dispatch = useDispatch();
@@ -38,11 +38,11 @@ const WalletPage = () => {
     // Smooth scroll effect
     useEffect(() => {
         let scrollTimeout;
-        
+
         const handleScroll = () => {
             setScrollY(window.scrollY);
             setIsScrolling(true);
-            
+
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(() => {
                 setIsScrolling(false);
@@ -51,9 +51,9 @@ const WalletPage = () => {
 
         // Add smooth scroll behavior to the page
         document.documentElement.style.scrollBehavior = 'smooth';
-        
+
         window.addEventListener('scroll', handleScroll, { passive: true });
-        
+
         return () => {
             window.removeEventListener('scroll', handleScroll);
             clearTimeout(scrollTimeout);
@@ -109,7 +109,6 @@ const WalletPage = () => {
         return url;
     };
 
-    // Transform API data to match the expected format and filter active offers
     const rewards = offersData ? offersData
         .filter(offer => offer.isActive) // Only show active offers
         .map(offer => ({
@@ -119,8 +118,10 @@ const WalletPage = () => {
             requiredOrbits: offer.orbitCost,
             color: "#FF8A65", // Default color, you can make this dynamic if needed
             image: convertGoogleDriveUrl(offer.imageUrl),
-            type: "discount"
-        })) : [];
+            type: "discount",
+            createdAt: offer.createdAt
+        }))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
 
     const handleRedeem = async (reward) => {
         if (user.balance >= reward.requiredOrbits) {
@@ -594,7 +595,7 @@ const WalletPage = () => {
     return (
         <div style={containerStyle} className="smooth-scroll">
             <div dangerouslySetInnerHTML={{ __html: cssAnimations }} />
-            
+
             {/* Header */}
             <div style={headerStyle}>
                 <h1 style={headerTitle}>Wallet</h1>
@@ -639,8 +640,8 @@ const WalletPage = () => {
                             const progressColor = getProgressColor(progressPercentage);
 
                             return (
-                                <div 
-                                    key={reward.id} 
+                                <div
+                                    key={reward.id}
                                     style={rewardCard(isRedeemable, index)}
                                     className="reward-card"
                                 >
@@ -650,9 +651,9 @@ const WalletPage = () => {
                                             src={reward.image}
                                             alt={reward.title}
                                             className="reward-image"
-                                            style={{ 
-                                                width: "100%", 
-                                                height: "100%", 
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
                                                 objectFit: "cover",
                                                 objectPosition: "center",
                                                 imageRendering: "optimizeQuality",
@@ -705,7 +706,7 @@ const WalletPage = () => {
                                     {/* Progress */}
                                     <div style={progressContainer}>
                                         <div style={progressBar}>
-                                            <div 
+                                            <div
                                                 style={{
                                                     ...progressFill(progressPercentage, progressColor, isRedeemable),
                                                     '--progress-width': `${Math.min(progressPercentage, 100)}%`

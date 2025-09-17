@@ -15,6 +15,8 @@ import ManageOffers from "../Admin/pages/ManageOffers";
 import LiveCoupons from "../Admin/pages/LiveCoupons";
 import CreateStore from "../Admin/pages/CreateStore";
 import EditOrDeleteStore from "../Admin/pages/EditOrDeleteStore";
+import WalletHistory from "../Admin/pages/WalletHistory";
+import ChangePassword from "../Admin/pages/ChangePassword";
 
 
 export const publicRoutes = [
@@ -41,5 +43,6 @@ export const adminRoutes = [
   { path: "/admin/liveCoupons", element: <LiveCoupons /> },
   { path: "/admin/createStore", element: <CreateStore /> },
   { path: "/admin/EditOrDeleteStore", element: <EditOrDeleteStore /> },
-
+  { path: "/admin/walletHistory", element: <WalletHistory /> },
+  { path: "/admin/changePassword", element: <ChangePassword /> }
 ]   

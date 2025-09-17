@@ -21,7 +21,6 @@ const Redemption = () => {
     return url;
   };
 
-  // Transform API data to match component structure
   const redemptions = redemptionsData ? redemptionsData.map(item => ({
     id: item._id,
     title: item.offerId.title,
@@ -35,7 +34,7 @@ const Redemption = () => {
     redemptionCode: `RDM${item._id.slice(-6).toUpperCase()}`, // Generate code from ID
     userId: item.userId._id,
     username: item.userId.username
-  })) : [];
+  })).sort((a, b) => new Date(b.redeemedAt) - new Date(a.redeemedAt)) : [];
 
   // Filter redemptions based on active filter
   const filteredRedemptions = redemptions.filter(redemption => {

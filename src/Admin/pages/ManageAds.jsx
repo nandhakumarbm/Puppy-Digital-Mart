@@ -31,7 +31,7 @@ const ManageAds = () => {
   }, [allAds]);
 
   const inactiveAdsCount = useMemo(() => {
-    return allAds.filter(ad => ad.isActive === false).length;
+    return allAds.filter(ad => ad.isActive === true).reverse();
   }, [allAds]);
 
   // Form state
@@ -130,6 +130,8 @@ const ManageAds = () => {
           );
         }
       
+        formData.append('image', adForm.imageFile); // Send raw image file
+
         adData = formData;
       } else {
         adData = {
@@ -138,7 +140,6 @@ const ManageAds = () => {
           description: adForm.description.trim(),
           mediaUrl: adForm.mediaUrl, // ✅ for videos, backend expects string URL
         };
-        console.log('Video ad data:', adData);
       }
       
 
