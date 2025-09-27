@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, Trash2, Plus, Store, Phone, MapPin, Calendar, X, Check, AlertTriangle, Upload, Filter } from 'lucide-react';
+import { Search, Edit, Trash2, Plus, Store, Phone, MapPin, Calendar, X, Check, AlertTriangle, Upload, Filter, RefreshCw } from 'lucide-react';
 import { Snackbar, Alert } from '@mui/material';
-import { useGetStoreQuery, useEditStoreMutation, useDeleteStoreMutation } from '../../utils/apiSlice';
+import { useGetStoreQuery, useEditStoreMutation, useDeleteStoreMutation, useActivateStoreMutation } from '../../utils/apiSlice';
 
 const MultiStoreManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +9,7 @@ const MultiStoreManagement = () => {
   const [selectedStore, setSelectedStore] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [showActivateConfirm, setShowActivateConfirm] = useState(null);
   const [formData, setFormData] = useState({
     storeName: '',
     storeImgUrl: '',
@@ -28,6 +29,7 @@ const MultiStoreManagement = () => {
   const { data: storesData, isLoading, error, refetch } = useGetStoreQuery();
   const [editStore, { isLoading: isEditLoading }] = useEditStoreMutation();
   const [deleteStore, { isLoading: isDeleting }] = useDeleteStoreMutation();
+  const [activateStore, { isLoading: isActivating }] = useActivateStoreMutation();
 
   // Convert single store response to array format for consistency
   const stores = storesData && Array.isArray(storesData)
@@ -125,10 +127,22 @@ const MultiStoreManagement = () => {
       await deleteStore({ storeId }).unwrap();
       setShowDeleteConfirm(null);
       refetch();
-      showSnackbar('Store deleted successfully!', 'success');
+      showSnackbar('Store deactivated successfully!', 'success');
     } catch (error) {
       console.error('Error deleting store:', error);
-      showSnackbar('Failed to delete store. Please try again.', 'error');
+      showSnackbar('Failed to deactivate store. Please try again.', 'error');
+    }
+  };
+
+  const handleActivate = async (storeId) => {
+    try {
+      await activateStore({ storeId }).unwrap();
+      setShowActivateConfirm(null);
+      refetch();
+      showSnackbar('Store activated successfully!', 'success');
+    } catch (error) {
+      console.error('Error activating store:', error);
+      showSnackbar('Failed to activate store. Please try again.', 'error');
     }
   };
 
@@ -314,14 +328,26 @@ const MultiStoreManagement = () => {
                   >
                     <Edit size={18} />
                   </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(store)}
-                    className="action-button delete-button"
-                    title="Delete Store"
-                    disabled={isDeleting}
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  
+                  {store.isActive ? (
+                    <button
+                      onClick={() => setShowDeleteConfirm(store)}
+                      className="action-button delete-button"
+                      title="Deactivate Store"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowActivateConfirm(store)}
+                      className="action-button activate-button"
+                      title="Activate Store"
+                      disabled={isActivating}
+                    >
+                      <RefreshCw size={18} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -463,7 +489,7 @@ const MultiStoreManagement = () => {
               <div className="modal-header danger">
                 <h3>
                   <AlertTriangle size={20} />
-                  Confirm Delete
+                  Confirm Deactivate
                 </h3>
                 <button onClick={() => setShowDeleteConfirm(null)} className="close-button">
                   <X size={20} />
@@ -474,8 +500,8 @@ const MultiStoreManagement = () => {
                 <div className="delete-icon">
                   <Trash2 size={48} />
                 </div>
-                <h4>Delete "{showDeleteConfirm.storeName}"?</h4>
-                <p>This action cannot be undone. The store and all its data will be permanently removed.</p>
+                <h4>Deactivate "{showDeleteConfirm.storeName}"?</h4>
+                <p>This action will deactivate the store and hide it from active listings. You can reactivate it later if needed.</p>
               </div>
 
               <div className="delete-actions">
@@ -494,12 +520,64 @@ const MultiStoreManagement = () => {
                   {isDeleting ? (
                     <>
                       <div className="button-spinner"></div>
-                      Deleting...
+                      Deactivating...
                     </>
                   ) : (
                     <>
                       <Trash2 size={16} />
-                      Yes, Delete
+                      Yes, Deactivate
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Activate Confirmation Modal */}
+        {showActivateConfirm && (
+          <div className="modal-overlay">
+            <div className="modal-content activate-modal">
+              <div className="modal-header success">
+                <h3>
+                  <RefreshCw size={20} />
+                  Confirm Activate
+                </h3>
+                <button onClick={() => setShowActivateConfirm(null)} className="close-button">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="activate-content">
+                <div className="activate-icon">
+                  <RefreshCw size={48} />
+                </div>
+                <h4>Activate "{showActivateConfirm.storeName}"?</h4>
+                <p>This action will reactivate the store and make it visible in active listings again.</p>
+              </div>
+
+              <div className="activate-actions">
+                <button
+                  onClick={() => setShowActivateConfirm(null)}
+                  className="cancel-activate-button"
+                  disabled={isActivating}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleActivate(showActivateConfirm._id)}
+                  className="confirm-activate-button"
+                  disabled={isActivating}
+                >
+                  {isActivating ? (
+                    <>
+                      <div className="button-spinner"></div>
+                      Activating...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw size={16} />
+                      Yes, Activate
                     </>
                   )}
                 </button>
@@ -846,6 +924,16 @@ const MultiStoreManagement = () => {
           box-shadow: 0 8px 16px rgba(229, 62, 62, 0.4);
         }
 
+        .activate-button {
+          background: linear-gradient(135deg, #38a169, #2f855a);
+          color: white;
+        }
+
+        .activate-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(56, 161, 105, 0.4);
+        }
+
         .action-button:disabled {
           opacity: 0.6;
           cursor: not-allowed;
@@ -953,6 +1041,12 @@ const MultiStoreManagement = () => {
           background: linear-gradient(135deg, #fed7d7, #feb2b2);
           color: #742a2a;
           border-bottom-color: rgba(196, 48, 43, 0.2);
+        }
+
+        .modal-header.success {
+          background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+          color: #22543d;
+          border-bottom-color: rgba(56, 161, 105, 0.2);
         }
 
         .modal-header h3 {
@@ -1244,6 +1338,86 @@ const MultiStoreManagement = () => {
           transform: none;
         }
 
+        /* Activate Modal */
+        .activate-modal {
+          width: 100%;
+          max-width: 400px;
+        }
+
+        .activate-content {
+          padding: 2rem;
+          text-align: center;
+        }
+
+        .activate-icon {
+          color: #38a169;
+          margin-bottom: 1rem;
+        }
+
+        .activate-content h4 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #2d3748;
+          margin-bottom: 1rem;
+        }
+
+        .activate-content p {
+          color: #64748b;
+          line-height: 1.6;
+          margin-bottom: 2rem;
+        }
+
+        .activate-actions {
+          display: flex;
+          gap: 1rem;
+          justify-content: center;
+          padding: 1.5rem 2rem;
+          border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .cancel-activate-button,
+        .confirm-activate-button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.875rem 1.5rem;
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-size: 0.9rem;
+        }
+
+        .cancel-activate-button {
+          background: #f7fafc;
+          color: #64748b;
+          border: 2px solid #e2e8f0;
+        }
+
+        .cancel-activate-button:hover:not(:disabled) {
+          background: #edf2f7;
+          color: #2d3748;
+          transform: translateY(-1px);
+        }
+
+        .confirm-activate-button {
+          background: linear-gradient(135deg, #38a169, #2f855a);
+          color: white;
+        }
+
+        .confirm-activate-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(56, 161, 105, 0.4);
+        }
+
+        .confirm-activate-button:disabled,
+        .cancel-activate-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
         /* Loading and Error States */
         .loading-container,
         .error-container {
@@ -1352,7 +1526,8 @@ const MultiStoreManagement = () => {
             flex-direction: column-reverse;
           }
 
-          .delete-actions {
+          .delete-actions,
+          .activate-actions {
             flex-direction: column-reverse;
           }
 
@@ -1400,7 +1575,8 @@ const MultiStoreManagement = () => {
           }
 
           .edit-form,
-          .delete-content {
+          .delete-content,
+          .activate-content {
             padding: 1.5rem;
           }
 
@@ -1408,7 +1584,8 @@ const MultiStoreManagement = () => {
             padding: 1rem 1.5rem;
           }
 
-          .delete-actions {
+          .delete-actions,
+          .activate-actions {
             padding: 1rem 1.5rem;
           }
         }`}</style>

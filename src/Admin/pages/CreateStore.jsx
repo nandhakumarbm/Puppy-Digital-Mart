@@ -239,15 +239,6 @@ const CreateStore = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const convertImageToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -256,21 +247,13 @@ const CreateStore = () => {
     }
 
     try {
-      let storeImgUrl = ''
-      
-      // Convert image to base64 if image is provided
-      if (formData.shopImage) {
-        storeImgUrl = await convertImageToBase64(formData.shopImage)
-      }
-
-      const payload = {
-        storeName: formData.shopName,
-        address: formData.shopAddress,
-        phoneNo: formData.phoneNo,
-        storeImgUrl: storeImgUrl
-      }
-
-      const response = await createStore(payload).unwrap()
+      const fd = new FormData()
+      fd.append('storeName', formData.shopName)
+      fd.append('address', formData.shopAddress)
+      fd.append('phoneNo', formData.phoneNo)
+      fd.append('storeImgUrl', formData.shopImage) // file goes here
+  
+      const response = await createStore(fd).unwrap()
       
       setAlert({
         open: true,
