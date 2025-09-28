@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { Search, Phone, Wallet } from "lucide-react";
+import { Search, Phone, Wallet, Calendar } from "lucide-react";
 import { useGetAllUsersQuery } from "../../utils/apiSlice";
 
 function UserLists() {
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortBy, setSortBy] = useState("name");
-    const [sortOrder, setSortOrder] = useState("asc");
+    const [sortBy, setSortBy] = useState("joinedAt"); // Default to sorting by joinedAt
+    const [sortOrder, setSortOrder] = useState("desc"); // Default to descending (newest first)
 
     // Fetch users from API
     const { data: usersData, error, isLoading } = useGetAllUsersQuery();
@@ -14,11 +14,21 @@ function UserLists() {
     const users = useMemo(() => {
         if (!usersData || !Array.isArray(usersData)) return [];
 
-        return usersData.map(user => ({
+        // Sort users by createdAt in descending order (newest first)
+        const sortedUsers = [...usersData].sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        return sortedUsers.map(user => ({
             id: user._id,
             name: user.username,
             phone: user.phone,
-            wallet: user.walletId?.walletBalance || 0
+            wallet: user.walletId?.walletBalance || 0,
+            joinedAt: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            }) : 'Unknown' // Format createdAt to "Month Day, Year"
         }));
     }, [usersData]);
 
@@ -35,6 +45,9 @@ function UserLists() {
             if (sortBy === 'wallet') {
                 aValue = Number(aValue);
                 bValue = Number(bValue);
+            } else if (sortBy === 'joinedAt') {
+                aValue = a.joinedAt === 'Unknown' ? 0 : new Date(usersData.find(u => u._id === a.id).createdAt).getTime();
+                bValue = b.joinedAt === 'Unknown' ? 0 : new Date(usersData.find(u => u._id === b.id).createdAt).getTime();
             }
 
             if (sortOrder === 'asc') {
@@ -43,7 +56,7 @@ function UserLists() {
                 return aValue < bValue ? 1 : -1;
             }
         });
-    }, [users, searchTerm, sortBy, sortOrder]);
+    }, [users, searchTerm, sortBy, sortOrder, usersData]);
 
     const handleSort = (field) => {
         if (sortBy === field) {
@@ -147,6 +160,20 @@ function UserLists() {
                                             )}
                                         </div>
                                     </th>
+                                    <th
+                                        style={thStyle}
+                                        onClick={() => handleSort('joinedAt')}
+                                    >
+                                        <div style={thContentStyle}>
+                                            <Calendar size={16} />
+                                            <span style={{ marginLeft: '8px' }}>Joined At</span>
+                                            {sortBy === 'joinedAt' && (
+                                                <span style={sortIndicatorStyle}>
+                                                    {sortOrder === 'asc' ? '↑' : '↓'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody style={tbodyStyle}>
@@ -175,11 +202,16 @@ function UserLists() {
                                                     </span>
                                                 </div>
                                             </td>
+                                            <td style={tdStyle}>
+                                                <div style={phoneCellStyle}>
+                                                    {user.joinedAt}
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="3" style={emptyStateStyle}>
+                                        <td colSpan="4" style={emptyStateStyle}>
                                             <div style={emptyContentStyle}>
                                                 <p style={emptyTitleStyle}>No users found</p>
                                                 <p style={emptySubtitleStyle}>
