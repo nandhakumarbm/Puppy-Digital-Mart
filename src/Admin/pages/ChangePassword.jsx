@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useChangePasswordMutation, useGetProfileByPhoneMutation } from "../../utils/apiSlice";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 function ChangePassword() {
   const [phone, setPhone] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
   const [userDetails, setUserDetails] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -27,12 +29,11 @@ function ChangePassword() {
     }
   };
 
-  const navigateToWhatsApp = (phoneNumber,newPassword) => {
+  const navigateToWhatsApp = (phoneNumber, newPassword) => {
     const message = encodeURIComponent(`Your password has been changed successfully! and your new password is: ${newPassword}`);
     const url = `https://wa.me/91${phoneNumber}?text=${message}`;
     window.open(url, "_blank");
   };
-
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -41,8 +42,8 @@ function ChangePassword() {
     try {
       await changePassword({ phone, newPassword }).unwrap();
       setSuccess("Password changed successfully!");
+      navigateToWhatsApp(phone, newPassword); // Moved before clearing newPassword
       setNewPassword("");
-      navigateToWhatsApp(phone,newPassword);
     } catch (err) {
       setError("Failed to change password. Please try again.");
     }
@@ -156,7 +157,7 @@ function ChangePassword() {
         {/* Change Password Form */}
         {userDetails && (
           <form onSubmit={handlePasswordSubmit}>
-            <div style={{ marginBottom: "1rem" }}>
+            <div style={{ marginBottom: "1rem", position: "relative" }}>
               <label
                 htmlFor="newPassword"
                 style={{
@@ -169,7 +170,7 @@ function ChangePassword() {
                 New Password
               </label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 id="newPassword"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -177,7 +178,7 @@ function ChangePassword() {
                 required
                 style={{
                   width: "100%",
-                  padding: "0.75rem",
+                  padding: "0.75rem 2.5rem 0.75rem 0.75rem", // Added paddingRight for icon
                   border: "1px solid var(--input-border)",
                   borderRadius: "4px",
                   fontSize: "1rem",
@@ -188,6 +189,28 @@ function ChangePassword() {
                 onFocus={(e) => (e.target.style.borderColor = "var(--accent-primary)")}
                 onBlur={(e) => (e.target.style.borderColor = "var(--input-border)")}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-10%)", // Adjusted for vertical centering
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                  color: "var(--secondary-text)",
+                  opacity: isPasswordLoading ? 0.6 : 1,
+                  pointerEvents: isPasswordLoading ? "none" : "auto",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <VisibilityOff style={{ fontSize: "1.25rem" }} /> : <Visibility style={{ fontSize: "1.25rem" }} />}
+              </button>
             </div>
             <button
               type="submit"

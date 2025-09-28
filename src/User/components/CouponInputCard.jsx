@@ -22,19 +22,36 @@ function CouponInputCard({
     icon: { fontSize: "32px", color: "var(--accent-primary)" },
     title: { fontWeight: "bold", margin: "10px 0", fontSize: "18px", color: "var(--primary-text)" },
     subtitle: { fontSize: "14px", color: "var(--secondary-text)", marginBottom: "15px" },
+    inputContainer: {
+      position: "relative",
+      marginBottom: "12px",
+    },
     input: {
       width: "100%",
       padding: "12px",
+      paddingRight: "40px", // Space for the clear button
       borderRadius: "8px",
       border: `1px solid var(--input-border)`,
       backgroundColor: "var(--background)",
       color: "var(--primary-text)",
       fontSize: "14px",
       outline: "none",
-      marginBottom: "12px",
       transition: "border-color 0.2s ease",
       fontFamily: "monospace",
       opacity: isLoading ? 0.6 : 1,
+    },
+    clearButton: {
+      position: "absolute",
+      right: "10px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      background: "transparent",
+      border: "none",
+      fontSize: "16px",
+      cursor: "pointer",
+      color: "var(--secondary-text)",
+      opacity: isLoading ? 0.6 : 1,
+      pointerEvents: isLoading ? "none" : "auto",
     },
     button: (enabled) => ({
       width: "100%",
@@ -66,7 +83,7 @@ function CouponInputCard({
     },
   };
 
-  const formatCouponCode = (value) => {
+  const formatCouponCode = (value, prevValue) => {
     // Remove all non-alphanumeric characters and convert to uppercase
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     
@@ -83,8 +100,9 @@ function CouponInputCard({
       }
     }
     
-    // Proactively add a hyphen if the input length matches a hyphen position
-    if (hyphenPositions.includes(cleaned.length) && cleaned.length < 12) {
+    // Only add a proactive hyphen if the input is growing (not when deleting)
+    const isDeleting = prevValue && value.length < prevValue.length;
+    if (!isDeleting && hyphenPositions.includes(cleaned.length) && cleaned.length < 12) {
       formatted += "-";
     }
     
@@ -94,12 +112,18 @@ function CouponInputCard({
 
   const handleInputChange = (e) => {
     const { value } = e.target;
-    // Format the input with hyphens
-    const formattedValue = formatCouponCode(value);
-    setCouponInput(formattedValue);
+    // Pass the current couponInput as prevValue to determine if we're deleting
+    const formattedValue = formatCouponCode(value, couponInput);
+    if (formattedValue.length <= 15) {
+      setCouponInput(formattedValue);
+    }
   };
 
-  const isButtonEnabled = couponInput.length == 14 && !isLoading;
+  const handleClearInput = () => {
+    setCouponInput(""); // Reset the coupon input
+  };
+
+  const isButtonEnabled = couponInput.length === 14 && !isLoading;
 
   return (
     <div style={styles.card}>
@@ -115,15 +139,27 @@ function CouponInputCard({
       <div style={styles.title}>Enter Coupon</div>
       <div style={styles.subtitle}>Enter your coupon code below</div>
       <form onSubmit={handleApplyCoupon}>
-        <input
-          type="text"
-          placeholder="L-L1-2254-ABD4"
-          value={couponInput}
-          onChange={handleInputChange}
-          style={styles.input}
-          disabled={isLoading}
-          maxLength={15} // 12 chars + 3 hyphens
-        />
+        <div style={styles.inputContainer}>
+          <input
+            type="text"
+            placeholder="L-L1-2254-ABD4"
+            value={couponInput}
+            onChange={handleInputChange}
+            style={styles.input}
+            disabled={isLoading}
+            maxLength={15} // 12 chars + 3 hyphens
+          />
+          {couponInput && !isLoading && (
+            <button
+              type="button"
+              style={styles.clearButton}
+              onClick={handleClearInput}
+              title="Clear coupon code"
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <button
           type="submit"
           style={styles.button(isButtonEnabled)}
